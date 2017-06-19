@@ -1,0 +1,28 @@
+ext {
+
+    androidBuildVersion = "25.0.2"
+    projectTargetSdkVersion = 25
+    projectMinSdkVersion = 22
+
+    okioVersion = '1.13.0'
+    gsonVersion = '2.8.0'
+    rxJavaVersion = '2.1.0'
+
+    junitVersion = '4.12'
+    mockitoVersion = '1.10.19'
+    assertJVersion = '2.7.0'
+    androidMockableVersion = '23'
+
+    domainDependencies = [
+            androidMockable: "com.google:android-mockable-default-values:$androidMockableVersion",
+            okio           : "com.squareup.okio:okio:$okioVersion",
+            rxJava         : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
+            gson           : "com.google.code.gson:gson:$gsonVersion",
+    ]
+
+    testDependencies = [
+            junit  : "junit:junit:$junitVersion",
+            mockito: "org.mockito:mockito-core:$mockitoVersion",
+            assertJ: "org.assertj:assertj-core:$assertJVersion",
+    ]
+}
