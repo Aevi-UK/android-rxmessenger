@@ -17,12 +17,14 @@ dependencies {
     testCompile testDependencies.junit
     testCompile testDependencies.mockito
     testCompile testDependencies.assertJ
+    testCompile testDependencies.robolectric
+    testCompile testDependencies.robolectricannotations
 }
 
 task javadocs(type: Javadoc) {
     source = sourceSets.main.allJava
     classpath = configurations.compile
-    title = "AEVI Payment API"
+    title = "Android RxMessenger"
     options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
