@@ -134,8 +134,6 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
                             break;
                     }
                 }
-            } else if (!callbackEmitter.hasObservers()) {
-                // Callback emitter has been disposed of by the client
             }
         }
     }
@@ -168,7 +166,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         }
     }
 
-    public Observable<P> createObservableForServiceIntent(Intent intent, final Q request) {
+    public Observable<P> createObservableForServiceIntent(final Intent intent, final Q request) {
         final PublishSubject<P> pubSub = PublishSubject.create();
         return bindToService(intent, pubSub).flatMap(new Function<MessengerConnection<Q, P>, ObservableSource<P>>() {
             @Override
@@ -178,7 +176,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
                     messengerConnection.shutDown();
                 } else {
                     // FIXME - use custom exception
-                    pubSub.onError(new RuntimeException("Unable to bind to payment app service"));
+                    pubSub.onError(new RuntimeException("Unable to bind to service: " + intent.getAction()));
                 }
                 return pubSub;
             }
