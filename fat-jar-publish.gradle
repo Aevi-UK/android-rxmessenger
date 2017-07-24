@@ -22,11 +22,15 @@ task fatJar(type: Jar) {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        javaAllLibrary(MavenPublication) {
             version = rootProject.apiVersion
-            artifactId = project.name
+            artifactId = "$project.name-all"
             groupId = project.group
             artifact fatJar
+        }
+        javaLibrary(MavenPublication) {
+
+            from components.java
         }
     }
 }
