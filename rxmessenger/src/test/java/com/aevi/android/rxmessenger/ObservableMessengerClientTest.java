@@ -90,10 +90,7 @@ public class ObservableMessengerClientTest {
         DataObject response = new DataObject();
         sendReply(response);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertNotComplete()
-                .assertValue(response);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValue(response);
     }
 
     @Test
@@ -111,10 +108,7 @@ public class ObservableMessengerClientTest {
         sendReply(response3);
         sendReply(response4);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertNotComplete()
-                .assertValues(response1, response2, response3, response4);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValues(response1, response2, response3, response4);
     }
 
     @Test
@@ -127,10 +121,7 @@ public class ObservableMessengerClientTest {
         sendReply(response);
         sendEndStream();
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertComplete()
-                .assertValue(response);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertComplete().assertValue(response);
     }
 
 
@@ -142,22 +133,19 @@ public class ObservableMessengerClientTest {
 
         sendErrorReply("code", "description");
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertError(new Predicate<Throwable>() {
-                    @Override
-                    public boolean test(@NonNull Throwable throwable) throws Exception {
-                        return new MessageException("code", "description").equals(throwable);
-                    }
-                });
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertError(new Predicate<Throwable>() {
+            @Override
+            public boolean test(@NonNull Throwable throwable) throws Exception {
+                return new MessageException("code", "description").equals(throwable);
+            }
+        });
     }
 
     @Test
     public void checkWillIgnoreNullMessageFromPcs() throws RemoteException, InterruptedException {
         TestObserver<DataObject> actionTestObserver = createObservableSendDataAndSubscribe(null);
 
-        actionTestObserver.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNotComplete()
-                .assertTimeout();
+        actionTestObserver.awaitDone(2000, TimeUnit.MILLISECONDS).assertNotComplete().assertTimeout();
     }
 
     private void sendEndStream() throws RemoteException {
@@ -211,9 +199,7 @@ public class ObservableMessengerClientTest {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
         mockMessageService = new MockMessageService();
 
-        shadowApplication
-                .setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS),
-                        mockMessageService.onBind(null));
+        shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS), mockMessageService.onBind(null));
 
         Intent intent = getMockServiceIntent();
 

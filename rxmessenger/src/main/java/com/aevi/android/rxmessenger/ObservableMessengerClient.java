@@ -16,11 +16,10 @@ import android.util.Log;
 import java.lang.ref.WeakReference;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.functions.Function;
+import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
 
@@ -41,10 +40,10 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         boolean bound = false;
         BehaviorSubject<MessengerConnection<Q, P>> bindSubject = BehaviorSubject.create();
 
-        MessengerConnection(ObservableMessengerClient baseMessengerClient, PublishSubject<P> callbackEmitter, Class<P> responseType) {
+        MessengerConnection(ObservableMessengerClient baseMessengerClient, IncomingHandler<P> incomingHandler, Class<P> responseType) {
             this.baseMessengerClient = baseMessengerClient;
             this.responseType = responseType;
-            this.incomingHandler = new IncomingHandler(baseMessengerClient, callbackEmitter, responseType);
+            this.incomingHandler = incomingHandler;
         }
 
         public void onServiceConnected(ComponentName componentName, IBinder binder) {
@@ -98,10 +97,10 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
     private static class IncomingHandler<P extends Sendable> extends Handler {
 
         private final WeakReference<ObservableMessengerClient> serviceRef;
-        private PublishSubject<P> callbackEmitter;
+        private Subject<P> callbackEmitter;
         private Class<P> responseType;
 
-        IncomingHandler(ObservableMessengerClient service, PublishSubject<P> callbackEmitter, Class<P> responseType) {
+        IncomingHandler(ObservableMessengerClient service, Subject<P> callbackEmitter, Class<P> responseType) {
             serviceRef = new WeakReference<>(service);
             this.callbackEmitter = callbackEmitter;
             this.responseType = responseType;
@@ -110,9 +109,9 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         @Override
         public void handleMessage(Message msg) {
             ObservableMessengerClient client = serviceRef.get();
-            if (client != null && callbackEmitter.hasObservers()) {
+            if (client != null) {
                 Bundle data = msg.getData();
-                if (data != null) {
+                if (data != null && callbackEmitter.hasObservers()) {
                     String sender = data.getString(AbstractMessengerService.DATA_SENDER);
                     switch (msg.what) {
                         case AbstractMessengerService.MESSAGE_RESPONSE:
@@ -150,7 +149,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
 
     public interface OnHandleMessageCallback<P> {
 
-        void handleMessage(P data, String sender, PublishSubject<P> callbackEmitter);
+        void handleMessage(P data, String sender, Subject<P> callbackEmitter);
     }
 
     /**
@@ -158,7 +157,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
      * <p>
      * Override if different/extra functionality is required in implementation of this base class
      */
-    protected void handleMessage(P data, String sender, PublishSubject<P> callbackEmitter) {
+    protected void handleMessage(P data, String sender, Subject<P> callbackEmitter) {
         if (onHandleMessageCallback == null) {
             callbackEmitter.onNext(data);
         } else {
@@ -167,24 +166,32 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
     }
 
     public Observable<P> createObservableForServiceIntent(final Intent intent, final Q request) {
-        final PublishSubject<P> pubSub = PublishSubject.create();
-        return bindToService(intent, pubSub).flatMap(new Function<MessengerConnection<Q, P>, ObservableSource<P>>() {
+        final BehaviorSubject<P> callbackEmitter = BehaviorSubject.create();
+        final IncomingHandler<P> incomingHandler = new IncomingHandler<P>(this, callbackEmitter, responseType);
+
+        bindToService(intent, incomingHandler).subscribe(new Consumer<MessengerConnection<Q, P>>() {
             @Override
-            public ObservableSource<P> apply(@NonNull final MessengerConnection<Q, P> messengerConnection) throws Exception {
+            public void accept(@NonNull MessengerConnection<Q, P> messengerConnection) throws Exception {
                 if (messengerConnection.isBound()) {
                     messengerConnection.sendMessage(request);
                     messengerConnection.shutDown();
                 } else {
                     // FIXME - use custom exception
-                    pubSub.onError(new RuntimeException("Unable to bind to service: " + intent.getAction()));
+                    callbackEmitter.onError(new RuntimeException("Unable to bind to service: " + intent.getAction()));
                 }
-                return pubSub;
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(@NonNull Throwable throwable) throws Exception {
+                callbackEmitter.onError(throwable);
             }
         });
+
+        return callbackEmitter;
     }
 
-    private Observable<MessengerConnection<Q, P>> bindToService(Intent serviceIntent, PublishSubject<P> callbackEmitter) {
-        MessengerConnection<Q, P> messengerConnection = new MessengerConnection<>(this, callbackEmitter, responseType);
+    private Observable<MessengerConnection<Q, P>> bindToService(Intent serviceIntent, IncomingHandler<P> incomingHandler) {
+        MessengerConnection<Q, P> messengerConnection = new MessengerConnection<>(this, incomingHandler, responseType);
         context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
         return messengerConnection.getConnectedObservable();
     }
