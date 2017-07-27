@@ -7,8 +7,8 @@ buildscript {
     }
 }
 
-ext.versionCode = 3
-version = "0.0.3-SNAPSHOT"
+ext.versionCode = 4
+version = "0.0.4-SNAPSHOT"
 
 allprojects {
 
