@@ -8,6 +8,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -166,6 +167,10 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
     }
 
     public Observable<P> createObservableForServiceIntent(final Intent intent, final Q request) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            throw new RuntimeException("Unable to create service connection off main UI thread");
+        }
+
         final BehaviorSubject<P> callbackEmitter = BehaviorSubject.create();
         final IncomingHandler<P> incomingHandler = new IncomingHandler<P>(this, callbackEmitter, responseType);
 
