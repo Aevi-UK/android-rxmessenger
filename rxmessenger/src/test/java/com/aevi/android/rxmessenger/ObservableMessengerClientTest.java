@@ -23,6 +23,7 @@ import org.robolectric.shadows.ShadowLog;
 import org.robolectric.shadows.ShadowPackageManager;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.annotations.NonNull;
@@ -146,6 +147,32 @@ public class ObservableMessengerClientTest {
         TestObserver<DataObject> actionTestObserver = createObservableSendDataAndSubscribe(null);
 
         actionTestObserver.awaitDone(2000, TimeUnit.MILLISECONDS).assertNotComplete().assertTimeout();
+    }
+
+    @Test
+    public void checkCanFunctionOffMainThread() throws InterruptedException {
+        DataObject msg = new DataObject();
+        NotMainRunnable nmr = new NotMainRunnable(msg);
+        new Thread(nmr).start();
+        nmr.startSignal.await(5000, TimeUnit.MILLISECONDS);
+        nmr.obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete();
+    }
+
+    public class NotMainRunnable implements Runnable {
+
+        CountDownLatch startSignal = new CountDownLatch(1);
+        final DataObject msg;
+        TestObserver<DataObject> obs;
+
+        NotMainRunnable(DataObject msg) {
+            this.msg = msg;
+        }
+
+        public void run() {
+            setupMockBoundMessengerService();
+            obs = createObservableSendDataAndSubscribe(msg);
+            startSignal.countDown();
+        }
     }
 
     private void sendEndStream() throws RemoteException {

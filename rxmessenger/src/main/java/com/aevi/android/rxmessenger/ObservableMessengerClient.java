@@ -102,6 +102,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         private Class<P> responseType;
 
         IncomingHandler(ObservableMessengerClient service, Subject<P> callbackEmitter, Class<P> responseType) {
+            super(Looper.getMainLooper());
             serviceRef = new WeakReference<>(service);
             this.callbackEmitter = callbackEmitter;
             this.responseType = responseType;
@@ -167,10 +168,6 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
     }
 
     public Observable<P> createObservableForServiceIntent(final Intent intent, final Q request) {
-        if (Looper.myLooper() != Looper.getMainLooper()) {
-            throw new RuntimeException("Unable to create service connection off main UI thread");
-        }
-
         final BehaviorSubject<P> callbackEmitter = BehaviorSubject.create();
         final IncomingHandler<P> incomingHandler = new IncomingHandler<P>(this, callbackEmitter, responseType);
 
