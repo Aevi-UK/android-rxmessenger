@@ -23,6 +23,7 @@ import io.reactivex.annotations.NonNull;
 
 import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_REQUEST;
 import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_RESPONSE;
+import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_END_STREAM;
 import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_ERROR;
 import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_REQUEST;
 import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_RESPONSE;
@@ -100,9 +101,10 @@ public class AbstractMessengerServiceTest {
         receiveServiceMessage(dataObject);
 
         DataObject response = new DataObject();
-        testAbstractMessengerService.sendMessageToClient(dataObject.getId(), response);
+        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), response);
 
         verifyDataSentToClient(response);
+        assertThat(sent).isTrue();
     }
 
     @Test
@@ -110,9 +112,10 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        testAbstractMessengerService.sendMessageToClient(dataObject.getId(), null);
+        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), null);
 
         verify(clientMessenger, times(0)).send(any(Message.class));
+        assertThat(sent).isFalse();
     }
 
     @Test
@@ -120,9 +123,10 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        testAbstractMessengerService.sendMessageToClient(null, new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient(null, new DataObject());
 
         verify(clientMessenger, times(0)).send(any(Message.class));
+        assertThat(sent).isFalse();
     }
 
     @Test
@@ -130,9 +134,11 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        testAbstractMessengerService.sendMessageToClient("6767", new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient("6767", new DataObject());
 
         verify(clientMessenger, times(0)).send(any(Message.class));
+        assertThat(testAbstractMessengerService.clientMap).hasSize(1);
+        assertThat(sent).isFalse();
     }
 
     @Test
@@ -142,7 +148,8 @@ public class AbstractMessengerServiceTest {
 
         doThrow(new RemoteException("Argh aliens!!")).when(clientMessenger).send(any(Message.class));
 
-        testAbstractMessengerService.sendMessageToClient(dataObject.getId(), new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), new DataObject());
+        assertThat(sent).isFalse();
     }
 
     @Test
@@ -150,12 +157,37 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        testAbstractMessengerService.sendErrorMessageToClient(dataObject.getId(), "ErrorCode", "Description");
+        boolean sent = testAbstractMessengerService.sendErrorMessageToClient(dataObject.getId(), "ErrorCode", "Description");
 
         verifyErrorSentToClient("ErrorCode", "Description");
+        assertThat(testAbstractMessengerService.clientMap).hasSize(0);
+        assertThat(sent).isTrue();
     }
 
-    private void verifyErrorSentToClient(String code, String msg) throws RemoteException  {
+    @Test
+    public void checkCanSendEndMessengeToClient() throws RemoteException {
+        DataObject dataObject = new DataObject();
+        receiveServiceMessage(dataObject);
+        assertThat(testAbstractMessengerService.clientMap).hasSize(1);
+
+        boolean sent = testAbstractMessengerService.sendEndStreamMessageToClient(dataObject.getId());
+
+        verifyEndSentToClient();
+        assertThat(testAbstractMessengerService.clientMap).hasSize(0);
+        assertThat(sent).isTrue();
+    }
+
+    private void verifyEndSentToClient() throws RemoteException {
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(clientMessenger).send(messageCaptor.capture());
+
+        Message m = messageCaptor.getValue();
+        Bundle b = m.getData();
+        Assertions.assertThat(b).isNotNull();
+        Assertions.assertThat(m.what).isEqualTo(MESSAGE_END_STREAM);
+    }
+
+    private void verifyErrorSentToClient(String code, String msg) throws RemoteException {
         MessageException me = new MessageException(code, msg);
         ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(clientMessenger).send(messageCaptor.capture());

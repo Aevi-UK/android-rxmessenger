@@ -32,7 +32,7 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
 
     private final Class<Q> requestType;
 
-    private Map<String, Messenger> clientMap = new HashMap<>();
+    protected Map<String, Messenger> clientMap = new HashMap<>();
 
     static class IncomingHandler extends Handler {
 
@@ -132,32 +132,46 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
         return incomingMessenger.getBinder();
     }
 
-    public void sendMessageToClient(String requestId, P response) {
+    public boolean sendMessageToClient(String requestId, P response) {
+        boolean sent = false;
         if (requestId != null && response != null) {
-            send(requestId, createMessage(response, KEY_DATA_RESPONSE, MESSAGE_RESPONSE, false));
+            sent = send(requestId, createMessage(response, KEY_DATA_RESPONSE, MESSAGE_RESPONSE, false));
         }
+        return sent;
     }
 
-    public void sendEndStreamMessageToClient(String requestId) {
+    public boolean sendEndStreamMessageToClient(String requestId) {
+        boolean sent = false;
         if (requestId != null) {
-            send(requestId, createMessage(null, MESSAGE_END_STREAM, false));
+            sent = send(requestId, createMessage(null, MESSAGE_END_STREAM, false));
+            // we are done with this client so clean up
+            clientMap.remove(requestId);
         }
+        return sent;
     }
 
-    public void sendErrorMessageToClient(String requestId, String code, String message) {
+    public boolean sendErrorMessageToClient(String requestId, String code, String message) {
+        boolean sent = false;
         if (requestId != null) {
-            send(requestId, createMessage(new MessageException(code, message)));
+            sent = send(requestId, createMessage(new MessageException(code, message)));
+            // we are done with this client so clean up
+            clientMap.remove(requestId);
         }
+        return sent;
     }
 
-    private void send(String requestId, Message message) {
+    private boolean send(String requestId, Message message) {
         Messenger target = clientMap.get(requestId);
         if (target != null) {
             try {
                 target.send(message);
+                return true;
             } catch (RemoteException e) {
                 Log.e(TAG, "Failed to send reply to client", e);
+                // client has gone away
+                clientMap.remove(requestId);
             }
         }
+        return false;
     }
 }
