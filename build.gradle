@@ -7,41 +7,12 @@ buildscript {
     }
 }
 
-ext.versionCode = 7
-version = "1.0.0"
-
 allprojects {
-
-    project.ext {
-        apiVersion = rootProject.version
-        apiVersionCode = rootProject.versionCode
-    }
 
     repositories {
         mavenLocal()
         jcenter()
         mavenCentral()
-        maven {
-            url "s3://sdk-snapshots.aevi.com/maven2"
-            credentials(AwsCredentials) {
-                accessKey aws_accessid
-                secretKey aws_accesskey
-            }
-        }
-        maven {
-            url "s3://sdk-qa.aevi.com/maven2"
-            credentials(AwsCredentials) {
-                accessKey aws_accessid
-                secretKey aws_accesskey
-            }
-        }
-        maven {
-            url "s3://sdk-releases.aevi.com/maven2"
-            credentials(AwsCredentials) {
-                accessKey aws_accessid
-                secretKey aws_accesskey
-            }
-        }
     }
 }
 

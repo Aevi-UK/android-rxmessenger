@@ -1,7 +1,14 @@
 plugins {
     id "com.jfrog.bintray" version "1.7.3"
+    id "com.github.dcendents.android-maven" version "1.5"
 }
 apply plugin: 'com.android.library'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+
+
+version = "1.0.0"
+group = 'com.aevi.android'
 
 android {
     compileSdkVersion projectTargetSdkVersion
@@ -31,10 +38,11 @@ dependencies {
     testCompile testDependencies.robolectricannotations
 }
 
+def siteUrl = 'https://github.com/Aevi-UK/android-rx-messenger'
+def gitUrl = 'https://github.com/Aevi-UK/android-rx-messenger.git'
+
 bintray {
     configurations = ['archives']
-
-    publish = true
 
     pkg {
         repo = 'aevi-uk'
@@ -42,13 +50,71 @@ bintray {
         userOrg = 'aevi'
         licenses = ['Apache-2.0']
         labels = ['rxjava', 'reactivex', 'android']
-        websiteUrl = 'https://github.com/Aevi-UK/android-rx-messenger/'
+        websiteUrl = siteUrl
         issueTrackerUrl = 'https://github.com/Aevi-UK/android-rx-messenger/issues'
-        vcsUrl = 'https://github.com/Aevi-UK/android-rx-messenger.git'
+        vcsUrl = gitUrl
+        publicDownloadNumbers = true
     }
 }
 
 if (project.hasProperty('bintrayUser') && project.hasProperty('bintrayKey')) {
     bintray.user = project.bintrayUser
     bintray.key = project.bintrayKey
+}
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'RxMessenger'
+                url siteUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'brettwold'
+                        name 'Brett Cherrington'
+                        email 'brett@annalytics.co.uk'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task findConventions << {
+    println project.getConvention()
 }
