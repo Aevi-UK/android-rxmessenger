@@ -1,5 +1,7 @@
 ext {
 
+    sourceCompatibility = JavaVersion.VERSION_1_7
+
     androidBuildVersion = "25.0.2"
     projectTargetSdkVersion = 25
     projectMinSdkVersion = 22

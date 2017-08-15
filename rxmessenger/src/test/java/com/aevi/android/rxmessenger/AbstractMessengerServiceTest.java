@@ -1,3 +1,16 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.aevi.android.rxmessenger;
 
 import android.os.Build;
@@ -6,7 +19,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -183,8 +195,8 @@ public class AbstractMessengerServiceTest {
 
         Message m = messageCaptor.getValue();
         Bundle b = m.getData();
-        Assertions.assertThat(b).isNotNull();
-        Assertions.assertThat(m.what).isEqualTo(MESSAGE_END_STREAM);
+        assertThat(b).isNotNull();
+        assertThat(m.what).isEqualTo(MESSAGE_END_STREAM);
     }
 
     private void verifyErrorSentToClient(String code, String msg) throws RemoteException {
@@ -194,10 +206,10 @@ public class AbstractMessengerServiceTest {
 
         Message m = messageCaptor.getValue();
         Bundle b = m.getData();
-        Assertions.assertThat(b).isNotNull();
-        Assertions.assertThat(m.what).isEqualTo(MESSAGE_ERROR);
-        Assertions.assertThat(b.getString(KEY_DATA_RESPONSE)).isNotNull();
-        Assertions.assertThat(b.getString(KEY_DATA_RESPONSE)).isEqualTo(me.toJson());
+        assertThat(b).isNotNull();
+        assertThat(m.what).isEqualTo(MESSAGE_ERROR);
+        assertThat(b.getString(KEY_DATA_RESPONSE)).isNotNull();
+        assertThat(b.getString(KEY_DATA_RESPONSE)).isEqualTo(me.toJson());
     }
 
     private void verifyDataSentToClient(DataObject msg) throws RemoteException {
@@ -206,10 +218,10 @@ public class AbstractMessengerServiceTest {
 
         Message m = messageCaptor.getValue();
         Bundle b = m.getData();
-        Assertions.assertThat(b).isNotNull();
-        Assertions.assertThat(m.what).isEqualTo(MESSAGE_RESPONSE);
-        Assertions.assertThat(b.getString(KEY_DATA_RESPONSE)).isNotNull();
-        Assertions.assertThat(b.getString(KEY_DATA_RESPONSE)).isEqualTo(msg.toJson());
+        assertThat(b).isNotNull();
+        assertThat(m.what).isEqualTo(MESSAGE_RESPONSE);
+        assertThat(b.getString(KEY_DATA_RESPONSE)).isNotNull();
+        assertThat(b.getString(KEY_DATA_RESPONSE)).isEqualTo(msg.toJson());
     }
 
     @NonNull
