@@ -17,7 +17,16 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Type;
@@ -25,17 +34,12 @@ import java.lang.reflect.Type;
 public final class JsonConverter {
 
     public static String serialize(Jsonable object) {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Bitmap.class, new BitmapSerialiser())
-                .create();
+        Gson gson = new GsonBuilder().registerTypeAdapter(Bitmap.class, new BitmapSerialiser()).create();
         return gson.toJson(object);
     }
 
     public static <T extends Jsonable> T deserialize(String json, Class<T> type) throws JsonParseException {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(JsonOption.class, new ExtrasDeserialiser())
-                .registerTypeAdapter(Bitmap.class, new BitmapDeserialiser())
-                .create();
+        Gson gson = new GsonBuilder().registerTypeAdapter(JsonOption.class, new ExtrasDeserialiser()).registerTypeAdapter(Bitmap.class, new BitmapDeserialiser()).create();
         return type.cast(gson.fromJson(json, type));
     }
 
@@ -72,7 +76,7 @@ public final class JsonConverter {
 
     private static String writeBitmap(Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        bitmap.compress(Bitmap.CompressFormat.WEBP, 70, stream);
         return Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
     }
 
