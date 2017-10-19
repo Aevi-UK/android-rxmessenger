@@ -13,7 +13,12 @@
  */
 package com.aevi.android.rxmessenger;
 
-public class MessageException extends Throwable implements Jsonable {
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+public class MessageException extends Throwable {
+
+    transient static final Gson gson = new GsonBuilder().create();
 
     protected final String code;
     protected final String message;
@@ -31,9 +36,8 @@ public class MessageException extends Throwable implements Jsonable {
         return message;
     }
 
-    @Override
     public String toJson() {
-        return JsonConverter.serialize(this);
+        return gson.toJson(this);
     }
 
     @Override
@@ -62,6 +66,6 @@ public class MessageException extends Throwable implements Jsonable {
     }
 
     public static MessageException fromJson(String json) {
-        return JsonConverter.deserialize(json, MessageException.class);
+        return gson.fromJson(json, MessageException.class);
     }
 }
