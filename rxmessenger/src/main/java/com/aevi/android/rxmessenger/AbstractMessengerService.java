@@ -28,8 +28,9 @@ import android.util.Log;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
-public abstract class AbstractMessengerService<Q extends Sendable, P extends Sendable> extends Service {
+public abstract class AbstractMessengerService extends Service {
 
     private static final String TAG = AbstractMessengerService.class.getSimpleName();
 
@@ -42,8 +43,6 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
     protected static final String KEY_DATA_RESPONSE = "dataResponse";
 
     protected static final String DATA_SENDER = "sender";
-
-    private final Class<Q> requestType;
 
     protected Map<String, Messenger> clientMap = new HashMap<>();
 
@@ -72,22 +71,18 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
 
     protected final Messenger incomingMessenger = new Messenger(new IncomingHandler(this));
 
-    protected AbstractMessengerService(Class<Q> requestType) {
-        this.requestType = requestType;
-    }
-
     private void handleIncomingAction(Message msg) {
         Bundle data = msg.getData();
         if (data.containsKey(KEY_DATA_REQUEST)) {
+            String clientId = UUID.randomUUID().toString();
             String requestJson = data.getString(KEY_DATA_REQUEST);
             try {
-                Q object = deserialiseRequestObject(requestJson);
-                if (object != null) {
+                if (requestJson != null) {
                     if (msg.replyTo != null) {
-                        clientMap.put(object.getId(), msg.replyTo);
+                        clientMap.put(clientId, msg.replyTo);
                     }
                     String callingPackage = getCallingPackage(msg);
-                    handleRequest(object, callingPackage);
+                    handleRequest(clientId, requestJson, callingPackage);
                 } else {
                     Log.e(TAG, "Invalid VAA data: " + requestJson);
                 }
@@ -95,10 +90,6 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
                 Log.e(TAG, "Invalid data sent to PCS", e);
             }
         }
-    }
-
-    protected Q deserialiseRequestObject(String requestJson) {
-        return JsonConverter.deserialize(requestJson, requestType);
     }
 
     private String getCallingPackage(Message msg) {
@@ -113,7 +104,14 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
         return callingPackage;
     }
 
-    protected abstract void handleRequest(Q action, String packageName);
+    /**
+     * Implemented by a parent class
+     *
+     * @param clientId    The id of the client. Should be used to return messages back to the originating client
+     * @param requestData Any request data to be sent back
+     * @param packageName The packageName of the calling client. Can be used to verify permissions (if required)
+     */
+    protected abstract void handleRequest(String clientId, String requestData, String packageName);
 
     private Message createMessage(MessageException error) {
         Bundle b = new Bundle();
@@ -121,9 +119,9 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
         return createMessage(b, MESSAGE_ERROR, false);
     }
 
-    private Message createMessage(P sendable, String dataKey, int what, boolean withReply) {
+    private Message createMessage(String senddata, String dataKey, int what, boolean withReply) {
         Bundle b = new Bundle();
-        b.putString(dataKey, sendable.toJson());
+        b.putString(dataKey, senddata);
         return createMessage(b, what, withReply);
     }
 
@@ -145,36 +143,57 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
         return incomingMessenger.getBinder();
     }
 
-    public boolean sendMessageToClient(String requestId, P response) {
+    /**
+     * Use to send a normal response to a client
+     *
+     * @param clientId The id of the client
+     * @param response The response data to send
+     * @return True if the client is still present and will have received the message
+     */
+    public boolean sendMessageToClient(String clientId, String response) {
         boolean sent = false;
-        if (requestId != null && response != null) {
-            sent = send(requestId, createMessage(response, KEY_DATA_RESPONSE, MESSAGE_RESPONSE, false));
+        if (clientId != null && response != null) {
+            sent = send(clientId, createMessage(response, KEY_DATA_RESPONSE, MESSAGE_RESPONSE, false));
         }
         return sent;
     }
 
-    public boolean sendEndStreamMessageToClient(String requestId) {
+    /**
+     * Use to send to the client that this message stream is done
+     *
+     * @param clientId The id of the client
+     * @return True if the client is still present and will have received the message
+     */
+    public boolean sendEndStreamMessageToClient(String clientId) {
         boolean sent = false;
-        if (requestId != null) {
-            sent = send(requestId, createMessage(null, MESSAGE_END_STREAM, false));
+        if (clientId != null) {
+            sent = send(clientId, createMessage(null, MESSAGE_END_STREAM, false));
             // we are done with this client so clean up
-            clientMap.remove(requestId);
+            clientMap.remove(clientId);
         }
         return sent;
     }
 
-    public boolean sendErrorMessageToClient(String requestId, String code, String message) {
+    /**
+     * Use to send an error message to the client
+     *
+     * @param clientId The id of the client
+     * @param code     An error code to send
+     * @param message  An error message to send
+     * @return True if the client is still present and will have received the message
+     */
+    public boolean sendErrorMessageToClient(String clientId, String code, String message) {
         boolean sent = false;
-        if (requestId != null) {
-            sent = send(requestId, createMessage(new MessageException(code, message)));
+        if (clientId != null) {
+            sent = send(clientId, createMessage(new MessageException(code, message)));
             // we are done with this client so clean up
-            clientMap.remove(requestId);
+            clientMap.remove(clientId);
         }
         return sent;
     }
 
-    private boolean send(String requestId, Message message) {
-        Messenger target = clientMap.get(requestId);
+    private boolean send(String clientId, Message message) {
+        Messenger target = clientMap.get(clientId);
         if (target != null) {
             try {
                 target.send(message);
@@ -182,7 +201,7 @@ public abstract class AbstractMessengerService<Q extends Sendable, P extends Sen
             } catch (RemoteException e) {
                 Log.e(TAG, "Failed to send reply to client", e);
                 // client has gone away
-                clientMap.remove(requestId);
+                clientMap.remove(clientId);
             }
         }
         return false;

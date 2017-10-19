@@ -19,6 +19,9 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,12 +36,7 @@ import java.util.UUID;
 
 import io.reactivex.annotations.NonNull;
 
-import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_END_STREAM;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_REQUEST;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_RESPONSE;
+import static com.aevi.android.rxmessenger.AbstractMessengerService.*;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -60,7 +58,7 @@ public class AbstractMessengerServiceTest {
         ShadowLog.stream = System.out;
         initMocks(this);
         MockShadowMessenger.clearMessages();
-        testAbstractMessengerService = new TestAbstractMessengerService(DataObject.class);
+        testAbstractMessengerService = new TestAbstractMessengerService();
     }
 
     @Test
@@ -69,16 +67,16 @@ public class AbstractMessengerServiceTest {
 
         testAbstractMessengerService.incomingMessenger.send(m);
 
-        assertThat(testAbstractMessengerService.lastAction).isNull();
+        assertThat(testAbstractMessengerService.lastRequestData).isNull();
     }
 
     @Test
-    public void checkWillIgnoreInvalidJsonMessage() throws RemoteException {
+    public void checkWillStillSendInvalidJsonMessage() throws RemoteException {
         Message m = setupJsonMessage("{ status: INIT; }");
 
         testAbstractMessengerService.incomingMessenger.send(m);
 
-        assertThat(testAbstractMessengerService.lastAction).isNull();
+        assertThat(testAbstractMessengerService.lastRequestData).isEqualTo("{ status: INIT; }");
     }
 
     @Test
@@ -87,7 +85,8 @@ public class AbstractMessengerServiceTest {
 
         testAbstractMessengerService.incomingMessenger.send(m);
 
-        assertThat(testAbstractMessengerService.lastAction).isNull();
+        assertThat(testAbstractMessengerService.lastRequestData).isNull();
+        assertThat(testAbstractMessengerService.lastRequestId).isNull();
     }
 
     @Test
@@ -96,7 +95,7 @@ public class AbstractMessengerServiceTest {
 
         testAbstractMessengerService.incomingMessenger.send(m);
 
-        assertThat(testAbstractMessengerService.lastAction.getId()).isEqualTo("567");
+        assertThat(testAbstractMessengerService.lastRequestData).isEqualTo("{ id: 567 }");
     }
 
     @Test
@@ -104,7 +103,7 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        assertThat(testAbstractMessengerService.lastAction).isEqualTo(dataObject);
+        assertThat(testAbstractMessengerService.lastRequestData).isEqualTo(dataObject.toJson());
     }
 
     @Test
@@ -113,7 +112,7 @@ public class AbstractMessengerServiceTest {
         receiveServiceMessage(dataObject);
 
         DataObject response = new DataObject();
-        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), response);
+        boolean sent = testAbstractMessengerService.sendMessageToClient(testAbstractMessengerService.lastRequestId, response.toJson());
 
         verifyDataSentToClient(response);
         assertThat(sent).isTrue();
@@ -135,7 +134,7 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        boolean sent = testAbstractMessengerService.sendMessageToClient(null, new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient(null, new DataObject().toJson());
 
         verify(clientMessenger, times(0)).send(any(Message.class));
         assertThat(sent).isFalse();
@@ -146,7 +145,7 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        boolean sent = testAbstractMessengerService.sendMessageToClient("6767", new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient("6767", new DataObject().toJson());
 
         verify(clientMessenger, times(0)).send(any(Message.class));
         assertThat(testAbstractMessengerService.clientMap).hasSize(1);
@@ -160,7 +159,7 @@ public class AbstractMessengerServiceTest {
 
         doThrow(new RemoteException("Argh aliens!!")).when(clientMessenger).send(any(Message.class));
 
-        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), new DataObject());
+        boolean sent = testAbstractMessengerService.sendMessageToClient(dataObject.getId(), new DataObject().toJson());
         assertThat(sent).isFalse();
     }
 
@@ -169,7 +168,7 @@ public class AbstractMessengerServiceTest {
         DataObject dataObject = new DataObject();
         receiveServiceMessage(dataObject);
 
-        boolean sent = testAbstractMessengerService.sendErrorMessageToClient(dataObject.getId(), "ErrorCode", "Description");
+        boolean sent = testAbstractMessengerService.sendErrorMessageToClient(testAbstractMessengerService.lastRequestId, "ErrorCode", "Description");
 
         verifyErrorSentToClient("ErrorCode", "Description");
         assertThat(testAbstractMessengerService.clientMap).hasSize(0);
@@ -182,7 +181,7 @@ public class AbstractMessengerServiceTest {
         receiveServiceMessage(dataObject);
         assertThat(testAbstractMessengerService.clientMap).hasSize(1);
 
-        boolean sent = testAbstractMessengerService.sendEndStreamMessageToClient(dataObject.getId());
+        boolean sent = testAbstractMessengerService.sendEndStreamMessageToClient(testAbstractMessengerService.lastRequestId);
 
         verifyEndSentToClient();
         assertThat(testAbstractMessengerService.clientMap).hasSize(0);
@@ -247,7 +246,9 @@ public class AbstractMessengerServiceTest {
         testAbstractMessengerService.incomingMessenger.send(m);
     }
 
-    class DataObject implements Sendable {
+    class DataObject {
+
+        transient final Gson gson = new GsonBuilder().create();
 
         private String id;
 
@@ -255,14 +256,12 @@ public class AbstractMessengerServiceTest {
             id = UUID.randomUUID().toString();
         }
 
-        @Override
         public String getId() {
             return id;
         }
 
-        @Override
         public String toJson() {
-            return JsonConverter.serialize(this);
+            return gson.toJson(this);
         }
 
         @Override
@@ -286,18 +285,19 @@ public class AbstractMessengerServiceTest {
         }
     }
 
-    class TestAbstractMessengerService extends AbstractMessengerService<DataObject, DataObject> {
+    class TestAbstractMessengerService extends AbstractMessengerService {
 
-        DataObject lastAction;
+        String lastRequestId;
+        String lastRequestData;
 
-        protected TestAbstractMessengerService(Class<DataObject> requestType) {
-            super(requestType);
+        protected TestAbstractMessengerService() {
             attachBaseContext(RuntimeEnvironment.application);
         }
 
         @Override
-        protected void handleRequest(DataObject action, String packageName) {
-            lastAction = action;
+        protected void handleRequest(String requestId, String request, String packageName) {
+            lastRequestData = request;
+            lastRequestId = requestId;
         }
     }
 }

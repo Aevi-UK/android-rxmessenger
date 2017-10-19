@@ -4,28 +4,27 @@ A utility library that can be used on Android to create a messenger service/clie
 can be used to send message to an Android Service and receive responses as a reactive stream of Observables.
 
 These classes provide an implementation of the messenger service making use of reactive extensions (RxJava/RxAndroid).
-All classes sent between client and server are serialised as JSON strings.
+All data sent between client and server are simple strings, implementations making use of this library are free
+to choose whatever serialisation mechanism they want to serialise the data (we recommend JSON).
 
 ## Setting up the server
 
 ```java
-public class DemoMessengerService extends AbstractMessengerService<RequestObject, ResponseObject> {
-
-    public DemoMessengerService() {
-        super(RequestObject.class);
-    }
+public class DemoMessengerService extends AbstractMessengerService {
 
     @Override
-    protected void handleRequest(RequestObject request) {
+    protected void handleRequest(String clientId, String requestData, String packageName) {
+        // It is important to send messages back to the correct clientId
+        // so make sure you store/keep this id somewhere
 
         // Setup response message here and send reply to client
         ResponseObject response = new ResponseObject();
 
         // Send a message to client (can be multiple)
-        sendMessageToClient(request.getId(), response);
+        sendMessageToClient(clientId, response.toJson());
 
         // Let the client know and end the stream here
-        sendEndStreamMessageToClient(request.getId());
+        sendEndStreamMessageToClient(clientId);
     }
 }
 ```
@@ -47,10 +46,10 @@ service.
 
 ```java
 
-    private ObservableMessengerClient<RequestObject, ResponseObject> client;
+    private ObservableMessengerClient client;
 
     protected void setup() {
-        client = new ObservableMessengerClient<>(this, getServerIntent(), ResponseObject.class);
+        client = new ObservableMessengerClient(this);
     }
 
     private Intent getServerIntent() {
@@ -62,11 +61,13 @@ service.
     public void sendMessage() {
         RequestObject request = new RequestObject();
 
-        client.sendMessage(request)
-                .subscribe(new Consumer<ResponseObject>() {
+        client.createObservableForServiceIntent(getServerIntent(), request.toJson())
+                .subscribe(new Consumer<String>() {
             @Override
-            public void accept(@NonNull ResponseObject response) throws Exception {
-                Log.d(TAG, "Got message from server: " + response.getServerMessage());
+            public void accept(@NonNull String response) throws Exception {
+                // probably convert back from JSON here depending on what
+                // the service at the other end sends
+                Log.d(TAG, "Got message from server: " + response);
             }
         });
     }

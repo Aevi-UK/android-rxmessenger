@@ -24,6 +24,9 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,12 +46,7 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 
-import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_END_STREAM;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_REQUEST;
-import static com.aevi.android.rxmessenger.AbstractMessengerService.MESSAGE_RESPONSE;
+import static com.aevi.android.rxmessenger.AbstractMessengerService.*;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -60,20 +58,20 @@ public class ObservableMessengerClientTest {
     private String MOCK_SERVICE_PACKAGE = "com.my.package";
     private String MOCK_SERVICE_CLASS = "com.my.package.MyServiceClass";
 
-    private ObservableMessengerClient<DataObject, DataObject> observableMessengerClient;
+    private ObservableMessengerClient observableMessengerClient;
     private MockMessageService mockMessageService;
 
     @Before
     public void setupMessengerClient() {
         ShadowLog.stream = System.out;
         initMocks(this);
-        observableMessengerClient = new ObservableMessengerClient<>(RuntimeEnvironment.application, DataObject.class);
+        observableMessengerClient = new ObservableMessengerClient(RuntimeEnvironment.application);
         MockShadowMessenger.clearMessages();
     }
 
     @Test
     public void checkWillHandleNoPaymentControlServiceWithError() throws RemoteException {
-        TestObserver<DataObject> obs = createObservableSendDataAndSubscribe(new DataObject());
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(new DataObject());
 
         obs.assertError(RuntimeException.class);
     }
@@ -99,19 +97,22 @@ public class ObservableMessengerClientTest {
     public void checkWillReceiveMessageFromService() throws RemoteException, InterruptedException {
         setupMockBoundMessengerService();
         DataObject msg = new DataObject();
-        TestObserver<DataObject> obs = createObservableSendDataAndSubscribe(msg);
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(msg);
 
         DataObject response = new DataObject();
         sendReply(response);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValue(response);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
+                .assertNoErrors()
+                .assertNotComplete()
+                .assertValue(response.toJson());
     }
 
     @Test
     public void checkWillReceiveMultipleMessagesFromService() throws RemoteException, InterruptedException {
         setupMockBoundMessengerService();
         DataObject msg = new DataObject();
-        TestObserver<DataObject> obs = createObservableSendDataAndSubscribe(msg);
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(msg);
 
         DataObject response1 = new DataObject();
         DataObject response2 = new DataObject();
@@ -122,28 +123,33 @@ public class ObservableMessengerClientTest {
         sendReply(response3);
         sendReply(response4);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValues(response1, response2, response3, response4);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
+                .assertNoErrors()
+                .assertNotComplete()
+                .assertValues(response1.toJson(), response2.toJson(), response3.toJson(), response4.toJson());
     }
 
     @Test
     public void checkWillEndStreamWhenToldByService() throws RemoteException, InterruptedException {
         setupMockBoundMessengerService();
         DataObject msg = new DataObject();
-        TestObserver<DataObject> obs = createObservableSendDataAndSubscribe(msg);
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(msg);
 
         DataObject response = new DataObject();
         sendReply(response);
         sendEndStream();
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertComplete().assertValue(response);
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
+                .assertNoErrors()
+                .assertComplete()
+                .assertValue(response.toJson());
     }
-
 
     @Test
     public void checkWillReceiveErrorMessageFromService() throws RemoteException, InterruptedException {
         setupMockBoundMessengerService();
         DataObject msg = new DataObject();
-        TestObserver<DataObject> obs = createObservableSendDataAndSubscribe(msg);
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(msg);
 
         sendErrorReply("code", "description");
 
@@ -157,7 +163,7 @@ public class ObservableMessengerClientTest {
 
     @Test
     public void checkWillIgnoreNullMessageFromPcs() throws RemoteException, InterruptedException {
-        TestObserver<DataObject> actionTestObserver = createObservableSendDataAndSubscribe(null);
+        TestObserver<String> actionTestObserver = createObservableSendDataAndSubscribe(null);
 
         actionTestObserver.awaitDone(2000, TimeUnit.MILLISECONDS).assertNotComplete().assertTimeout();
     }
@@ -175,7 +181,7 @@ public class ObservableMessengerClientTest {
 
         CountDownLatch startSignal = new CountDownLatch(1);
         final DataObject msg;
-        TestObserver<DataObject> obs;
+        TestObserver<String> obs;
 
         NotMainRunnable(DataObject msg) {
             this.msg = msg;
@@ -225,9 +231,9 @@ public class ObservableMessengerClientTest {
         assertThat(b.getString(KEY_DATA_REQUEST)).isEqualTo(msg.toJson());
     }
 
-    private TestObserver<DataObject> createObservableSendDataAndSubscribe(DataObject dataObject) {
+    private TestObserver<String> createObservableSendDataAndSubscribe(DataObject dataObject) {
         Intent intent = getMockServiceIntent();
-        return observableMessengerClient.createObservableForServiceIntent(intent, dataObject).test();
+        return observableMessengerClient.createObservableForServiceIntent(intent, dataObject == null ? null : dataObject.toJson()).test();
     }
 
     private void verifyServiceUnbound() {
@@ -239,7 +245,8 @@ public class ObservableMessengerClientTest {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
         mockMessageService = new MockMessageService();
 
-        shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS), mockMessageService.onBind(null));
+        shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS),
+                mockMessageService.onBind(null));
 
         Intent intent = getMockServiceIntent();
 
@@ -263,7 +270,9 @@ public class ObservableMessengerClientTest {
         }
     }
 
-    private class DataObject implements Sendable {
+    private class DataObject {
+
+        transient final Gson gson = new GsonBuilder().create();
 
         private String id;
 
@@ -271,14 +280,12 @@ public class ObservableMessengerClientTest {
             id = UUID.randomUUID().toString();
         }
 
-        @Override
         public String getId() {
             return id;
         }
 
-        @Override
         public String toJson() {
-            return JsonConverter.serialize(this);
+            return gson.toJson(this);
         }
 
         @Override
