@@ -7,7 +7,13 @@ buildscript {
     }
 }
 
+version = "2.0.0"
+
 allprojects {
+
+    project.ext {
+        apiVersion = rootProject.version
+    }
 
     repositories {
         mavenLocal()

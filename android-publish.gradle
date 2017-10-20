@@ -27,7 +27,7 @@ artifacts {
 
 publishing {
     publications {
-        print(MavenPublication) {
+        rxMessenger(MavenPublication) {
             groupId group
             artifactId "${artifactId}"
             version version
