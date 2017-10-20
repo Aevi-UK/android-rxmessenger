@@ -34,28 +34,25 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
-public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
+public class ObservableMessengerClient {
 
     private static final String TAG = ObservableMessengerClient.class.getSimpleName();
 
     private final Context context;
-    private final Class<P> responseType;
-    private final OnHandleMessageCallback<P> onHandleMessageCallback;
+    private final OnHandleMessageCallback onHandleMessageCallback;
 
-    protected static class MessengerConnection<Q extends Sendable, P extends Sendable> implements ServiceConnection {
+    protected static class MessengerConnection implements ServiceConnection {
 
         final ObservableMessengerClient baseMessengerClient;
         final IncomingHandler incomingHandler;
-        final Class<P> responseType;
 
         Messenger outgoingMessenger;
         ComponentName componentName;
         boolean bound = false;
-        BehaviorSubject<MessengerConnection<Q, P>> bindSubject = BehaviorSubject.create();
+        BehaviorSubject<MessengerConnection> bindSubject = BehaviorSubject.create();
 
-        MessengerConnection(ObservableMessengerClient baseMessengerClient, IncomingHandler<P> incomingHandler, Class<P> responseType) {
+        MessengerConnection(ObservableMessengerClient baseMessengerClient, IncomingHandler incomingHandler) {
             this.baseMessengerClient = baseMessengerClient;
-            this.responseType = responseType;
             this.incomingHandler = incomingHandler;
         }
 
@@ -77,7 +74,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
             bindSubject.onComplete();
         }
 
-        Observable<MessengerConnection<Q, P>> getConnectedObservable() {
+        Observable<MessengerConnection> getConnectedObservable() {
             return bindSubject;
         }
 
@@ -85,11 +82,11 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
             return bound;
         }
 
-        void sendMessage(Q request) {
-            if (request != null) {
+        void sendMessage(String requestData) {
+            if (requestData != null) {
                 Message msg = Message.obtain(null, AbstractMessengerService.MESSAGE_REQUEST);
                 Bundle data = new Bundle();
-                data.putString(AbstractMessengerService.KEY_DATA_REQUEST, request.toJson());
+                data.putString(AbstractMessengerService.KEY_DATA_REQUEST, requestData);
                 data.putString(AbstractMessengerService.DATA_SENDER, componentName.flattenToString());
                 msg.setData(data);
                 msg.replyTo = new Messenger(incomingHandler);
@@ -107,17 +104,15 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         }
     }
 
-    private static class IncomingHandler<P extends Sendable> extends Handler {
+    private static class IncomingHandler extends Handler {
 
         private final WeakReference<ObservableMessengerClient> serviceRef;
-        private Subject<P> callbackEmitter;
-        private Class<P> responseType;
+        private Subject<String> callbackEmitter;
 
-        IncomingHandler(ObservableMessengerClient service, Subject<P> callbackEmitter, Class<P> responseType) {
+        IncomingHandler(ObservableMessengerClient service, Subject<String> callbackEmitter) {
             super(Looper.getMainLooper());
             serviceRef = new WeakReference<>(service);
             this.callbackEmitter = callbackEmitter;
-            this.responseType = responseType;
         }
 
         @Override
@@ -131,8 +126,7 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
                         case AbstractMessengerService.MESSAGE_RESPONSE:
                             if (data.containsKey(AbstractMessengerService.KEY_DATA_RESPONSE)) {
                                 String json = data.getString(AbstractMessengerService.KEY_DATA_RESPONSE);
-                                P response = JsonConverter.deserialize(json, responseType);
-                                client.handleMessage(response, sender, callbackEmitter);
+                                client.handleMessage(json, sender, callbackEmitter);
                             }
                             break;
                         case AbstractMessengerService.MESSAGE_END_STREAM:
@@ -151,27 +145,27 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         }
     }
 
-    public ObservableMessengerClient(Context context, Class<P> responseType) {
-        this(context, responseType, null);
+    public ObservableMessengerClient(Context context) {
+        this(context, null);
     }
 
-    public ObservableMessengerClient(Context context, Class<P> responseType, OnHandleMessageCallback<P> onHandleMessageCallback) {
+    public ObservableMessengerClient(Context context, OnHandleMessageCallback onHandleMessageCallback) {
         this.context = context;
-        this.responseType = responseType;
         this.onHandleMessageCallback = onHandleMessageCallback;
     }
 
-    public interface OnHandleMessageCallback<P> {
+    public interface OnHandleMessageCallback {
 
-        void handleMessage(P data, String sender, Subject<P> callbackEmitter);
+        void handleMessage(String data, String sender, Subject<String> callbackEmitter);
     }
 
     /**
-     * Default handler if just need to send message back to callback
      * <p>
+     * Default handler if just need to send message back to callback
+     * </p>
      * Override if different/extra functionality is required in implementation of this base class
      */
-    protected void handleMessage(P data, String sender, Subject<P> callbackEmitter) {
+    protected void handleMessage(String data, String sender, Subject<String> callbackEmitter) {
         if (onHandleMessageCallback == null) {
             callbackEmitter.onNext(data);
         } else {
@@ -179,15 +173,22 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         }
     }
 
-    public Observable<P> createObservableForServiceIntent(final Intent intent, final Q request) {
-        final BehaviorSubject<P> callbackEmitter = BehaviorSubject.create();
-        final IncomingHandler<P> incomingHandler = new IncomingHandler<P>(this, callbackEmitter, responseType);
+    /**
+     * Used to send a message to an {@link AbstractMessengerService} implementation and observe the responses from it
+     *
+     * @param intent      The Intent of the {@link android.app.Service} to call
+     * @param requestData The data to send (usually a serialised JSON object)
+     * @return An Observable stream of Strings containing data that the service sends back to this client
+     */
+    public Observable<String> createObservableForServiceIntent(final Intent intent, final String requestData) {
+        final BehaviorSubject<String> callbackEmitter = BehaviorSubject.create();
+        final IncomingHandler incomingHandler = new IncomingHandler(this, callbackEmitter);
 
-        bindToService(intent, incomingHandler).subscribe(new Consumer<MessengerConnection<Q, P>>() {
+        bindToService(intent, incomingHandler).subscribe(new Consumer<MessengerConnection>() {
             @Override
-            public void accept(@NonNull MessengerConnection<Q, P> messengerConnection) throws Exception {
+            public void accept(@NonNull MessengerConnection messengerConnection) throws Exception {
                 if (messengerConnection.isBound()) {
-                    messengerConnection.sendMessage(request);
+                    messengerConnection.sendMessage(requestData);
                     messengerConnection.shutDown();
                 } else {
                     // FIXME - use custom exception
@@ -204,8 +205,8 @@ public class ObservableMessengerClient<Q extends Sendable, P extends Sendable> {
         return callbackEmitter;
     }
 
-    private Observable<MessengerConnection<Q, P>> bindToService(Intent serviceIntent, IncomingHandler<P> incomingHandler) {
-        MessengerConnection<Q, P> messengerConnection = new MessengerConnection<>(this, incomingHandler, responseType);
+    private Observable<MessengerConnection> bindToService(Intent serviceIntent, IncomingHandler incomingHandler) {
+        MessengerConnection messengerConnection = new MessengerConnection(this, incomingHandler);
         context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
         return messengerConnection.getConnectedObservable();
     }
