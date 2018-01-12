@@ -30,6 +30,7 @@ import java.lang.ref.WeakReference;
 
 import io.reactivex.Observable;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
@@ -40,6 +41,7 @@ public class ObservableMessengerClient {
 
     private final Context context;
     private final OnHandleMessageCallback onHandleMessageCallback;
+    private MessengerConnection messengerConnection;
 
     protected static class MessengerConnection implements ServiceConnection {
 
@@ -187,9 +189,9 @@ public class ObservableMessengerClient {
         bindToService(intent, incomingHandler).subscribe(new Consumer<MessengerConnection>() {
             @Override
             public void accept(@NonNull MessengerConnection messengerConnection) throws Exception {
+                 ObservableMessengerClient.this.messengerConnection = messengerConnection;
                 if (messengerConnection.isBound()) {
                     messengerConnection.sendMessage(requestData);
-                    messengerConnection.shutDown();
                 } else {
                     // FIXME - use custom exception
                     callbackEmitter.onError(new RuntimeException("Unable to bind to service: " + intent.getAction()));
@@ -202,7 +204,15 @@ public class ObservableMessengerClient {
             }
         });
 
-        return callbackEmitter;
+        return callbackEmitter.doFinally(new Action() {
+            @Override
+            public void run() throws Exception {
+                if (messengerConnection != null) {
+                    messengerConnection.shutDown();
+                    messengerConnection = null;
+                }
+            }
+        });
     }
 
     private Observable<MessengerConnection> bindToService(Intent serviceIntent, IncomingHandler incomingHandler) {

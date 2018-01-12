@@ -77,11 +77,36 @@ public class ObservableMessengerClientTest {
     }
 
     @Test
-    public void checkWillUnbindService() throws RemoteException {
+    public void checkServiceDoesNotUnbindImmediately() throws RemoteException {
         setupMockBoundMessengerService();
         createObservableSendDataAndSubscribe(new DataObject());
 
-        verifyServiceUnbound();
+        verifyServiceIsBound();
+    }
+
+    @Test
+    public void checkDisposeWillUnbindService() throws RemoteException {
+        setupMockBoundMessengerService();
+        createObservableSendDataAndSubscribe(new DataObject()).dispose();
+
+        verifyServiceIsUnbound();
+    }
+
+    @Test
+    public void checkCompleteWillUnbindService() throws RemoteException {
+        setupMockBoundMessengerService();
+        TestObserver<String> obs = createObservableSendDataAndSubscribe(new DataObject());
+
+        DataObject response = new DataObject();
+        sendReply(response);
+        sendEndStream();
+
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
+                .assertNoErrors()
+                .assertComplete()
+                .assertValue(response.toJson());
+
+        verifyServiceIsUnbound();
     }
 
     @Test
@@ -236,9 +261,14 @@ public class ObservableMessengerClientTest {
         return observableMessengerClient.createObservableForServiceIntent(intent, dataObject == null ? null : dataObject.toJson()).test();
     }
 
-    private void verifyServiceUnbound() {
+    private void verifyServiceIsUnbound() {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
+        assertThat(shadowApplication.getBoundServiceConnections()).isEmpty();
         assertThat(shadowApplication.getUnboundServiceConnections()).hasSize(1);
+    }
+    private void verifyServiceIsBound() {
+        ShadowApplication shadowApplication = ShadowApplication.getInstance();
+        assertThat(shadowApplication.getBoundServiceConnections()).hasSize(1);
     }
 
     private void setupMockBoundMessengerService() {
