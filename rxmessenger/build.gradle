@@ -30,10 +30,10 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation domainDependencies.gson
-    implementation domainDependencies.rxJava
-    implementation domainDependencies.okio
-    provided domainDependencies.support
+    api domainDependencies.gson
+    api domainDependencies.rxJava
+    api domainDependencies.okio
+    compileOnly domainDependencies.support
 
     testImplementation testDependencies.junit
     testImplementation testDependencies.mockito

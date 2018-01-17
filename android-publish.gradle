@@ -1,5 +1,13 @@
 apply plugin: 'maven-publish'
 
+configurations {
+    javadoc_extra_jars
+}
+
+dependencies {
+    javadoc_extra_jars "${domainDependencies.rxJava}@jar", "${domainDependencies.gson}@jar"
+}
+
 task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
     classifier = 'sources'
@@ -7,7 +15,9 @@ task sourcesJar(type: Jar) {
 
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
+    failOnError = false
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    classpath += files(configurations.javadoc_extra_jars.files)
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -40,8 +50,8 @@ publishing {
             pom.withXml {
                 def dependenciesNode = asNode().appendNode('dependencies')
 
-                // List all compile dependencies and write to POM
-                configurations.compile.getAllDependencies().each { Dependency dep ->
+                // List all api dependencies and write to POM
+                configurations.api.getAllDependencies().each { Dependency dep ->
                     if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
                         return // ignore invalid dependencies
 
