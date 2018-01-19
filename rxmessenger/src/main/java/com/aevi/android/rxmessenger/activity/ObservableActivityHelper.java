@@ -11,13 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.SupportActivity;
 import android.util.Log;
+
+import com.aevi.android.rxmessenger.MessageException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -34,7 +36,7 @@ import io.reactivex.subjects.SingleSubject;
  * Helper class that allows for a request/response style communication between some class and an Android Activity.
  *
  * A class that wants to start an activity to interact with a user and generate some form of response, can create a new instance with {@link #createInstance(Context, Intent)} followed by a call to {@link #startObservableActivity()} in order to
- * retrieve an Observable to subscrive to.
+ * retrieve an Observable to subscribe to.
  *
  * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and call {@link #publishResponse(Object)} to pass back a response.
  *
@@ -96,6 +98,7 @@ public class ObservableActivityHelper<T> {
         if (id != null) {
             return INSTANCES_MAP.get(id);
         }
+        Log.w(TAG, "Tried to retrieve client with id: " + id + ", could not be found");
         return null;
     }
 
@@ -122,7 +125,7 @@ public class ObservableActivityHelper<T> {
      */
     @SuppressLint("RestrictedApi")
     public void registerActivityForFinish(SupportActivity activity) {
-        Log.d(TAG, "Registering activity for finish: " + activity.getClass().getName());
+        Log.d(TAG, "Registering activity for finish: " + activity.getClass().getName() + ", clientId: " + id);
         ActivityFinishHandler activityFinishHandler = new ActivityFinishHandler(activity, this);
         activity.getLifecycle().addObserver(activityFinishHandler);
     }
@@ -177,7 +180,7 @@ public class ObservableActivityHelper<T> {
         return Observable.create(new ObservableOnSubscribe<T>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<T> emitter) throws Exception {
-                Log.d(ObservableActivityHelper.class.getSimpleName(), "Starting activity: " + intent.toString());
+                Log.d(TAG, "Starting activity: " + intent.toString() + ", clientId: " + id);
                 ObservableActivityHelper.this.emitter = emitter;
                 context.startActivity(intent);
             }

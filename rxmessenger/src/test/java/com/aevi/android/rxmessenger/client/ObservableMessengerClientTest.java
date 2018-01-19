@@ -11,19 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.client;
 
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.*;
 
+import com.aevi.android.rxmessenger.MessageException;
+import com.aevi.android.rxmessenger.MockShadowMessenger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -46,7 +43,7 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 
-import static com.aevi.android.rxmessenger.AbstractMessengerService.*;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -55,8 +52,9 @@ import static org.mockito.MockitoAnnotations.initMocks;
 @RunWith(RobolectricTestRunner.class)
 public class ObservableMessengerClientTest {
 
-    private String MOCK_SERVICE_PACKAGE = "com.my.package";
-    private String MOCK_SERVICE_CLASS = "com.my.package.MyServiceClass";
+    private static final String MOCK_SERVICE_PACKAGE = "com.my.package";
+    private static final String MOCK_SERVICE_CLASS = "com.my.package.MyServiceClass";
+    private static final ComponentName SERVICE_COMPONENT_NAME = new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS);
 
     private ObservableMessengerClient observableMessengerClient;
     private MockMessageService mockMessageService;
@@ -65,7 +63,7 @@ public class ObservableMessengerClientTest {
     public void setupMessengerClient() {
         ShadowLog.stream = System.out;
         initMocks(this);
-        observableMessengerClient = new ObservableMessengerClient(RuntimeEnvironment.application);
+        observableMessengerClient = new ObservableMessengerClient(RuntimeEnvironment.application, SERVICE_COMPONENT_NAME);
         MockShadowMessenger.clearMessages();
     }
 
@@ -85,21 +83,13 @@ public class ObservableMessengerClientTest {
     }
 
     @Test
-    public void checkDisposeWillUnbindService() throws RemoteException {
-        setupMockBoundMessengerService();
-        createObservableSendDataAndSubscribe(new DataObject()).dispose();
-
-        verifyServiceIsUnbound();
-    }
-
-    @Test
-    public void checkCompleteWillUnbindService() throws RemoteException {
+    public void checkCloseConnectionWillUnbindService() throws RemoteException {
         setupMockBoundMessengerService();
         TestObserver<String> obs = createObservableSendDataAndSubscribe(new DataObject());
 
         DataObject response = new DataObject();
         sendReply(response);
-        sendEndStream();
+        observableMessengerClient.closeConnection();
 
         obs.awaitDone(2000, TimeUnit.MILLISECONDS)
                 .assertNoErrors()
@@ -110,12 +100,44 @@ public class ObservableMessengerClientTest {
     }
 
     @Test
-    public void checkWillSendMessageToPcs() throws RemoteException {
+    public void checkWillSendMessageToService() throws RemoteException {
         setupMockBoundMessengerService();
         DataObject msg = new DataObject();
         createObservableSendDataAndSubscribe(msg);
 
         verifyDataSent(msg);
+    }
+
+    @Test
+    public void checkWillUseSameClientIdForMultipleMessages() throws Exception {
+        setupMockBoundMessengerService();
+        DataObject msg = new DataObject();
+        createObservableSendDataAndSubscribe(msg);
+        Bundle firstMessage = getReceivedBundle(0);
+        String firstClientId = firstMessage.getString(KEY_CLIENT_ID);
+
+        createObservableSendDataAndSubscribe(msg);
+        Bundle secondMessage = getReceivedBundle(1);
+        String secondClientId = secondMessage.getString(KEY_CLIENT_ID);
+
+        assertThat(firstClientId).isEqualTo(secondClientId);
+    }
+
+    @Test
+    public void checkWillUseDifferentClientIdsForEachConnection() throws Exception {
+        setupMockBoundMessengerService();
+        DataObject msg = new DataObject();
+        createObservableSendDataAndSubscribe(msg);
+        Bundle firstMessage = getReceivedBundle(0);
+        String firstClientId = firstMessage.getString(KEY_CLIENT_ID);
+        observableMessengerClient.closeConnection();
+
+        msg = new DataObject();
+        createObservableSendDataAndSubscribe(msg);
+        Bundle secondMessage = getReceivedBundle(1);
+        String secondClientId = secondMessage.getString(KEY_CLIENT_ID);
+
+        assertThat(firstClientId).isNotEqualTo(secondClientId);
     }
 
     @Test
@@ -246,19 +268,24 @@ public class ObservableMessengerClientTest {
         sent.replyTo.send(m);
     }
 
+    private Bundle getReceivedBundle(int messageIndex) {
+        Message m = MockShadowMessenger.getMessages().get(messageIndex);
+        return m.getData();
+    }
+
     private void verifyDataSent(DataObject msg) {
         assertThat(MockShadowMessenger.getMessages()).hasSize(1);
         Message m = MockShadowMessenger.getMessages().get(0);
         Bundle b = m.getData();
         assertThat(b).isNotNull();
         assertThat(m.what).isEqualTo(MESSAGE_REQUEST);
+        assertThat(b.getString(KEY_CLIENT_ID)).isNotNull();
         assertThat(b.getString(KEY_DATA_REQUEST)).isNotNull();
         assertThat(b.getString(KEY_DATA_REQUEST)).isEqualTo(msg.toJson());
     }
 
     private TestObserver<String> createObservableSendDataAndSubscribe(DataObject dataObject) {
-        Intent intent = getMockServiceIntent();
-        return observableMessengerClient.createObservableForServiceIntent(intent, dataObject == null ? null : dataObject.toJson()).test();
+        return observableMessengerClient.sendMessage(dataObject == null ? null : dataObject.toJson()).test();
     }
 
     private void verifyServiceIsUnbound() {
@@ -266,6 +293,7 @@ public class ObservableMessengerClientTest {
         assertThat(shadowApplication.getBoundServiceConnections()).isEmpty();
         assertThat(shadowApplication.getUnboundServiceConnections()).hasSize(1);
     }
+
     private void verifyServiceIsBound() {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
         assertThat(shadowApplication.getBoundServiceConnections()).hasSize(1);
@@ -278,16 +306,11 @@ public class ObservableMessengerClientTest {
         shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS),
                 mockMessageService.onBind(null));
 
-        Intent intent = getMockServiceIntent();
+        Intent intent = new Intent();
+        intent.setComponent(SERVICE_COMPONENT_NAME);
 
         ShadowPackageManager shadowPackageManager = Shadows.shadowOf(RuntimeEnvironment.application.getPackageManager());
         shadowPackageManager.addResolveInfoForIntent(intent, new ResolveInfo());
-    }
-
-    private Intent getMockServiceIntent() {
-        Intent intent = new Intent();
-        intent.setComponent(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS));
-        return intent;
     }
 
     private class MockMessageService extends Service {

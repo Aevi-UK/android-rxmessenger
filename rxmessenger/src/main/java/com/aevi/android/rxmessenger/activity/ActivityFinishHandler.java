@@ -1,4 +1,4 @@
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.activity;
 
 
 import android.app.Activity;
