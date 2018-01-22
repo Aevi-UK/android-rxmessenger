@@ -44,24 +44,26 @@ application. e.g.
 The client application should use the `ObservableMessengerClient` class to send a message to the
 service.
 
+The client is constructed with the component name of the service it should connect to. On the first call to `sendMessage()`, the client will bind to the service.
+The connection is then kept active until `closeConnection()` is called, or the remote service sends an end of stream command.
+
+The `clientId` passed to the service `handleRequest` method is guaranteed to remain the same for as long as the connection is open. If closed and a new connection is opened, a new id will be generated.
+
+Optionally, you can use a different constructor than below by passing in a `OnHandleMessageCallback` instance, allowing you to deal with the response before passing it on to the subscriber.
+
 ```java
 
     private ObservableMessengerClient client;
 
     protected void setup() {
-        client = new ObservableMessengerClient(this);
-    }
-
-    private Intent getServerIntent() {
-        Intent intent = new Intent();
-        intent.setClassName("com.server.package", "com.server.package.DemoMessengerService");
-        return intent;
+        ComponentName serviceComponentName = new ComponentName("com.server.package", "com.server.package.DemoMessengerService");
+        client = new ObservableMessengerClient(this, serviceComponentName);
     }
 
     public void sendMessage() {
         RequestObject request = new RequestObject();
 
-        client.createObservableForServiceIntent(getServerIntent(), request.toJson())
+        client.sendMessage(request.toJson())
                 .subscribe(new Consumer<String>() {
             @Override
             public void accept(@NonNull String response) throws Exception {
@@ -70,6 +72,10 @@ service.
                 Log.d(TAG, "Got message from server: " + response);
             }
         });
+    }
+
+    public void finish() {
+        client.closeConnection();
     }
 
 ```

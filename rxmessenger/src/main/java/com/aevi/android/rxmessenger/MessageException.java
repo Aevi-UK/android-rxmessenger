@@ -18,10 +18,10 @@ import com.google.gson.GsonBuilder;
 
 public class MessageException extends Throwable {
 
-    transient static final Gson gson = new GsonBuilder().create();
+    private transient static final Gson gson = new GsonBuilder().create();
 
-    protected final String code;
-    protected final String message;
+    private final String code;
+    private final String message;
 
     public MessageException(String code, String message) {
         this.code = code;
