@@ -17,12 +17,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.*;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
@@ -87,7 +82,7 @@ public abstract class AbstractMessengerService extends Service {
                     Log.e(TAG, "Invalid VAA data: " + requestJson);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Invalid data sent to PCS", e);
+                Log.e(TAG, "Invalid data", e);
             }
         }
     }

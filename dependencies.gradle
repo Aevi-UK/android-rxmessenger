@@ -2,9 +2,11 @@ ext {
 
     sourceCompatibility = JavaVersion.VERSION_1_7
 
-    androidBuildVersion = "25.0.2"
-    projectTargetSdkVersion = 25
+    androidBuildVersion = "26.0.2"
+    projectTargetSdkVersion = 26
     projectMinSdkVersion = 22
+
+    supportLibrary = '26.1.0'
 
     okioVersion = '1.13.0'
     gsonVersion = '2.8.0'
@@ -21,6 +23,7 @@ ext {
             okio           : "com.squareup.okio:okio:$okioVersion",
             rxJava         : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
             gson           : "com.google.code.gson:gson:$gsonVersion",
+            support        : "com.android.support:support-v4:$supportLibrary",
     ]
 
     testDependencies = [

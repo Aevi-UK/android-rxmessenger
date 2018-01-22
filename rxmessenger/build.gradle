@@ -28,17 +28,18 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile domainDependencies.gson
-    compile domainDependencies.rxJava
-    compile domainDependencies.okio
+    api domainDependencies.gson
+    api domainDependencies.rxJava
+    api domainDependencies.okio
+    compileOnly domainDependencies.support
 
-    testCompile testDependencies.junit
-    testCompile testDependencies.mockito
-    testCompile testDependencies.assertJ
-    testCompile testDependencies.robolectric
-    testCompile testDependencies.robolectricannotations
+    testImplementation testDependencies.junit
+    testImplementation testDependencies.mockito
+    testImplementation testDependencies.assertJ
+    testImplementation testDependencies.robolectric
+    testImplementation testDependencies.robolectricannotations
 }
 
 def siteUrl = 'https://github.com/Aevi-UK/android-rx-messenger'
@@ -96,7 +97,7 @@ install {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
 apply from: '../android-publish.gradle'
