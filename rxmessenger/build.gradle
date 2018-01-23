@@ -33,7 +33,9 @@ dependencies {
     api domainDependencies.gson
     api domainDependencies.rxJava
     api domainDependencies.okio
-    compileOnly domainDependencies.support
+    compileOnly domainDependencies.archLifecycle
+
+    annotationProcessor "android.arch.lifecycle:compiler:1.0.0"
 
     testImplementation testDependencies.junit
     testImplementation testDependencies.mockito
