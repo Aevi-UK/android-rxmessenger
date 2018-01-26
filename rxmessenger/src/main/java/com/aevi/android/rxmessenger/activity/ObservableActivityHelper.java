@@ -29,7 +29,6 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.annotations.Nullable;
 import io.reactivex.subjects.PublishSubject;
 
 /**
@@ -67,6 +66,8 @@ public class ObservableActivityHelper<T> {
     /**
      * Create a new instance in order to start an Activity.
      *
+     * If an instance with the same clientId already exists, a new one will be created and overwrite the old one.
+     *
      * Note - this should generally *only* be called from a service. From the activity, {@link #getInstance(String)} should be used.
      *
      * @param context The Android context
@@ -93,16 +94,17 @@ public class ObservableActivityHelper<T> {
      *
      * @param intent The intent passed in to the Activity
      * @return An instance, or null if not available
+     * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since
      */
     @SuppressWarnings("unchecked")
-    @Nullable
-    public static <T> ObservableActivityHelper<T> getInstance(Intent intent) {
+    @NonNull
+    public static <T> ObservableActivityHelper<T> getInstance(Intent intent) throws NoSuchInstanceException {
         String id = intent.getStringExtra(INTENT_ID);
-        if (id != null) {
-            return INSTANCES_MAP.get(id);
+        if (id == null) {
+            Log.e(TAG, "No id set in intent");
+            throw new NoSuchInstanceException();
         }
-        Log.w(TAG, "Tried to retrieve client with id: " + id + ", could not be found");
-        return null;
+        return getInstance(id);
     }
 
     /**
@@ -110,11 +112,17 @@ public class ObservableActivityHelper<T> {
      *
      * @param id The id used when creating the instance
      * @return An instance, or null if not available
+     * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since
      */
     @SuppressWarnings("unchecked")
-    @Nullable
-    public static <T> ObservableActivityHelper<T> getInstance(String id) {
-        return INSTANCES_MAP.get(id);
+    @NonNull
+    public static <T> ObservableActivityHelper<T> getInstance(String id) throws NoSuchInstanceException {
+        ObservableActivityHelper<T> helper = INSTANCES_MAP.get(id);
+        if (helper == null) {
+            Log.e(TAG, "Tried to retrieve client with id: " + id + ", could not be found");
+            throw new NoSuchInstanceException();
+        }
+        return helper;
     }
 
     /**
@@ -135,6 +143,7 @@ public class ObservableActivityHelper<T> {
      * @return A stream of events that your activity/fragment needs to handle appropriately
      */
     @SuppressLint("RestrictedApi")
+    @NonNull
     public Observable<String> registerForEvents(Lifecycle lifecycle) {
         Log.d(TAG, "Activity registering for events in helper with id: " + id);
         activityStateMonitor = new ActivityStateMonitor(lifecycle, this);
@@ -158,6 +167,7 @@ public class ObservableActivityHelper<T> {
      *
      * @return A stream of lifecycle events
      */
+    @NonNull
     public Observable<Lifecycle.Event> onLifecycleEvent() {
         return lifecycleEventSubject;
     }
@@ -201,6 +211,7 @@ public class ObservableActivityHelper<T> {
      *
      * @return The Observable that the activity will publish responses to
      */
+    @NonNull
     public Observable<T> startObservableActivity() {
         return Observable.create(new ObservableOnSubscribe<T>() {
             @Override
