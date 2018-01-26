@@ -1,46 +1,47 @@
 plugins {
     id "com.jfrog.bintray" version "1.7.3"
-    id "com.github.dcendents.android-maven" version "1.5"
 }
-apply plugin: 'com.android.library'
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'java'
+apply plugin: 'maven'
 apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
+apply from: '../java-provided.gradle'
 apply from: '../publish-repo.gradle'
+apply from: '../jar-publisher.gradle'
 
 version = "${apiVersion}"
 group = 'com.aevi.android'
 ext.artifactId = 'rxmessenger'
 
-android {
-    compileSdkVersion projectTargetSdkVersion
-    buildToolsVersion androidBuildVersion
-
-    defaultConfig {
-        minSdkVersion projectMinSdkVersion
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
-    }
-}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    api domainDependencies.gson
-    api domainDependencies.rxJava
-    api domainDependencies.okio
-    compileOnly domainDependencies.support
+    compile domainDependencies.gson
+    compile domainDependencies.rxJava
+    compile domainDependencies.okio
+    provided domainDependencies.androidMockable
+    provided domainDependencies.archLifecycle
+    provided domainDependencies.archLifecycleJava8
 
-    testImplementation testDependencies.junit
-    testImplementation testDependencies.mockito
-    testImplementation testDependencies.assertJ
-    testImplementation testDependencies.robolectric
-    testImplementation testDependencies.robolectricannotations
+    testCompile domainDependencies.androidMockable
+    testCompile testDependencies.junit
+    testCompile testDependencies.mockito
+    testCompile testDependencies.assertJ
+    testCompile testDependencies.robolectric
+    testCompile testDependencies.robolectricannotations
 }
+
+javadoc {
+    source = sourceSets.main.allJava
+    destinationDir = file("../javadocs/rxmessenger")
+    classpath = files(configurations.compile, configurations.provided)
+    title = "Android RxMessenger"
+    options.memberLevel = JavadocMemberLevel.PUBLIC
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
 def siteUrl = 'https://github.com/Aevi-UK/android-rx-messenger'
 def gitUrl = 'https://github.com/Aevi-UK/android-rx-messenger.git'
@@ -85,6 +86,11 @@ install {
                         name 'Brett Cherrington'
                         email 'brett@annalytics.co.uk'
                     }
+                    developer {
+                        id 'andreas-borglin'
+                        name 'Andreas Borglin'
+                        email 'andreas@jakoon.co.uk'
+                    }
                 }
                 scm {
                     connection gitUrl
@@ -95,9 +101,3 @@ install {
         }
     }
 }
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-}
-
-apply from: '../android-publish.gradle'

@@ -14,23 +14,22 @@
 package com.aevi.android.rxmessenger.activity;
 
 import android.annotation.SuppressLint;
+import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.SupportActivity;
 import android.util.Log;
 
 import com.aevi.android.rxmessenger.MessageException;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.annotations.Nullable;
-import io.reactivex.subjects.SingleSubject;
+import io.reactivex.subjects.PublishSubject;
 
 /**
  * Helper class that allows for a request/response style communication between some class and an Android Activity.
@@ -40,31 +39,36 @@ import io.reactivex.subjects.SingleSubject;
  *
  * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and call {@link #publishResponse(Object)} to pass back a response.
  *
- * The activity should also call {@link #registerActivityForFinish(SupportActivity)} to allow the code that started it to finish the activity if a response is
- * no longer required (due to a timeout, cancellation, error, etc). The initial class can then call {@link #finishActivity()} to finish it.
+ * The activity should also call {@link #registerForEvents(Lifecycle)} to allow the service or client to send relevant events to it.
  */
 public class ObservableActivityHelper<T> {
 
     private static final String TAG = ObservableActivityHelper.class.getSimpleName();
     public static final String INTENT_ID = "ObservableActivityHelper.ID";
 
-    private static Map<String, ObservableActivityHelper> INSTANCES_MAP = new java.util.HashMap<>();
+    private static final Map<String, ObservableActivityHelper> INSTANCES_MAP = new HashMap<>();
 
-    private ObservableEmitter<T> emitter;
-    private SingleSubject<Boolean> finishSubject;
     private final String id;
     private final Context context;
     private final Intent intent;
+
+    private ObservableEmitter<T> emitter;
+    private ActivityStateMonitor activityStateMonitor;
+    private PublishSubject<Lifecycle.Event> lifecycleEventSubject;
 
     private ObservableActivityHelper(String id, Context context, Intent intent) {
         this.id = id;
         this.context = context;
         this.intent = intent;
-        finishSubject = SingleSubject.create();
+        lifecycleEventSubject = PublishSubject.create();
     }
 
     /**
      * Create a new instance in order to start an Activity.
+     *
+     * If an instance with the same clientId already exists, a new one will be created and overwrite the old one.
+     *
+     * Note - this should generally *only* be called from a service. From the activity, {@link #getInstance(String)} should be used.
      *
      * @param context The Android context
      * @param intent  The intent to start the activity
@@ -90,16 +94,17 @@ public class ObservableActivityHelper<T> {
      *
      * @param intent The intent passed in to the Activity
      * @return An instance, or null if not available
+     * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since
      */
     @SuppressWarnings("unchecked")
-    @Nullable
-    public static <T> ObservableActivityHelper<T> getInstance(Intent intent) {
+    @NonNull
+    public static <T> ObservableActivityHelper<T> getInstance(Intent intent) throws NoSuchInstanceException {
         String id = intent.getStringExtra(INTENT_ID);
-        if (id != null) {
-            return INSTANCES_MAP.get(id);
+        if (id == null) {
+            Log.e(TAG, "No id set in intent");
+            throw new NoSuchInstanceException();
         }
-        Log.w(TAG, "Tried to retrieve client with id: " + id + ", could not be found");
-        return null;
+        return getInstance(id);
     }
 
     /**
@@ -107,47 +112,77 @@ public class ObservableActivityHelper<T> {
      *
      * @param id The id used when creating the instance
      * @return An instance, or null if not available
+     * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since
      */
     @SuppressWarnings("unchecked")
-    @Nullable
-    public static <T> ObservableActivityHelper<T> getInstance(String id) {
-        return INSTANCES_MAP.get(id);
+    @NonNull
+    public static <T> ObservableActivityHelper<T> getInstance(String id) throws NoSuchInstanceException {
+        ObservableActivityHelper<T> helper = INSTANCES_MAP.get(id);
+        if (helper == null) {
+            Log.e(TAG, "Tried to retrieve client with id: " + id + ", could not be found");
+            throw new NoSuchInstanceException();
+        }
+        return helper;
     }
 
     /**
-     * An activity (that subclasses a support library activity) can call this to register for finish requests from the class that started it.
+     * Register your activity (or possibly fragment) for events from the messenger service.
      *
-     * This uses the Lifecycle and LifecycleObserver classes from the Android Architecture Components to listen to activity events.
+     * NOTE! If you use this - ensure that you include ""android.arch.lifecycle:runtime" as a dependency. In order to avoid conflicts with
+     * the support library in the destination apps, this dependency is compile time only (aka provided) in this project.
+     * See https://developer.android.com/topic/libraries/architecture/adding-components.html for details
      *
-     * Note that the activity passed in is stored as a weak reference and hence will not keep your activity alive after being destroyed.
+     * These events may come from the remote client of the {@link com.aevi.android.rxmessenger.service.AbstractMessengerService}, or locally
+     * in reaction to the lifecycle events of your activity or fragment.
      *
-     * @param activity The support library based activity to finish on request
+     * It is up to the system/framework that makes use of this library to define what events might be sent.
+     *
+     * Make sure you dispose of any subscription to this if your activity/fragment is destroyed.
+     *
+     * @param lifecycle The Lifecycle of your (support) activity/fragment (via getLifecycle())
+     * @return A stream of events that your activity/fragment needs to handle appropriately
      */
     @SuppressLint("RestrictedApi")
-    public void registerActivityForFinish(SupportActivity activity) {
-        Log.d(TAG, "Registering activity for finish: " + activity.getClass().getName() + ", clientId: " + id);
-        ActivityFinishHandler activityFinishHandler = new ActivityFinishHandler(activity, this);
-        activity.getLifecycle().addObserver(activityFinishHandler);
+    @NonNull
+    public Observable<String> registerForEvents(Lifecycle lifecycle) {
+        Log.d(TAG, "Activity registering for events in helper with id: " + id);
+        activityStateMonitor = new ActivityStateMonitor(lifecycle, this);
+        return activityStateMonitor.getEventObservable();
+    }
+
+    /*
+     * For internal use.
+     */
+    void sendLifecycleEvent(Lifecycle.Event event) {
+        lifecycleEventSubject.onNext(event);
+        if (event == Lifecycle.Event.ON_DESTROY) {
+            Log.d(TAG, "Activity destroyed - shutting down helper with id: " + id);
+            lifecycleEventSubject.onComplete();
+        }
     }
 
     /**
-     * If the mechanism used via {@link #registerActivityForFinish(SupportActivity)} is not suitable, an Activity can subscribe to this directly in order
-     * to receive finish requests. Note that the activity itself must ensure that it disposes of the subscription properly, etc.
+     * This can be called by the {@link com.aevi.android.rxmessenger.service.AbstractMessengerService} subclass to listen to activity lifecycle
+     * events, provided that the activity/fragment called {@link #registerForEvents(Lifecycle)}.
      *
-     * Note that this should *NOT* be called if you are using the {@link #registerActivityForFinish(SupportActivity)} above.
-     *
-     * @return A Single to subscribe to
+     * @return A stream of lifecycle events
      */
-    public Single<Boolean> onFinishActivity() {
-        return finishSubject;
+    @NonNull
+    public Observable<Lifecycle.Event> onLifecycleEvent() {
+        return lifecycleEventSubject;
     }
 
     /**
-     * This can be called to request an activity to finish itself, provided that the activity supports this from either calling {@link #registerActivityForFinish(SupportActivity)} or {@link #onFinishActivity()}.
+     * Send an event to the activity.
+     *
+     * Note that this is only successful if the activity has called {@link #registerForEvents(Lifecycle)} previously.
+     *
+     * @param event The event to send to the activity
      */
-    public void finishActivity() {
-        Log.d(TAG, "finishActivity");
-        finishSubject.onSuccess(true);
+    public void sendEventToActivity(String event) {
+        if (activityStateMonitor != null) {
+            activityStateMonitor.sendEvent(event);
+        }
     }
 
     /**
@@ -176,6 +211,7 @@ public class ObservableActivityHelper<T> {
      *
      * @return The Observable that the activity will publish responses to
      */
+    @NonNull
     public Observable<T> startObservableActivity() {
         return Observable.create(new ObservableOnSubscribe<T>() {
             @Override
