@@ -1,12 +1,7 @@
 ext {
 
-    sourceCompatibility = JavaVersion.VERSION_1_7
-
-    androidBuildVersion = "27.0.3"
-    projectTargetSdkVersion = 26
-    projectMinSdkVersion = 22
-
     archLifecycleVersion = '1.0.3'
+    archLifecycleJava8Version = '1.1.0'
 
     okioVersion = '1.13.0'
     gsonVersion = '2.8.0'
@@ -15,15 +10,16 @@ ext {
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     assertJVersion = '2.7.0'
-    androidMockableVersion = '23'
+    androidMockableVersion = '26'
     robolectricVersion = '3.3.2'
 
     domainDependencies = [
-            androidMockable: "com.google:android-mockable-default-values:$androidMockableVersion",
-            okio           : "com.squareup.okio:okio:$okioVersion",
-            rxJava         : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
-            gson           : "com.google.code.gson:gson:$gsonVersion",
-            archLifecycle  : "android.arch.lifecycle:runtime:$archLifecycleVersion"
+            androidMockable   : "com.google:android-mockable-default-values:$androidMockableVersion",
+            okio              : "com.squareup.okio:okio:$okioVersion",
+            rxJava            : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
+            gson              : "com.google.code.gson:gson:$gsonVersion",
+            archLifecycle     : "android.arch.lifecycle:runtime:$archLifecycleVersion",
+            archLifecycleJava8: "android.arch.lifecycle:common-java8:$archLifecycleJava8Version"
     ]
 
     testDependencies = [
