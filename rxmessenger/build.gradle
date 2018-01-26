@@ -24,8 +24,7 @@ dependencies {
     provided domainDependencies.archLifecycle
     provided domainDependencies.archLifecycleJava8
 
-    //annotationProcessor "android.arch.lifecycle:compiler:1.0.0"
-
+    testCompile domainDependencies.androidMockable
     testCompile testDependencies.junit
     testCompile testDependencies.mockito
     testCompile testDependencies.assertJ
