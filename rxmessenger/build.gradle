@@ -20,7 +20,7 @@ dependencies {
     compile domainDependencies.gson
     compile domainDependencies.rxJava
     compile domainDependencies.okio
-    //provided domainDependencies.androidMockable
+    provided domainDependencies.androidMockable
     provided domainDependencies.archLifecycle
     provided domainDependencies.archLifecycleJava8
 

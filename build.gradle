@@ -11,6 +11,9 @@ allprojects {
         jcenter()
         mavenCentral()
         google()
+        maven {
+            url "http://sdk-public-artifacts.s3-website-eu-west-1.amazonaws.com/maven2"
+        }
     }
 }
 
