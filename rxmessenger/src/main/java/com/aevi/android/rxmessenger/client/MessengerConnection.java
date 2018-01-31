@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 
 import static com.aevi.android.rxmessenger.MessageConstants.*;
 
@@ -41,6 +42,10 @@ class MessengerConnection implements ServiceConnection {
         this.incomingHandler = incomingHandler;
         this.clientId = UUID.randomUUID().toString();
         Log.d(TAG, "Created connection with id: " + clientId);
+    }
+
+    public void updateCallbackEmitter(Subject<String> callbackEmitter) {
+        incomingHandler.updateCallbackEmitter(callbackEmitter);
     }
 
     public void onServiceConnected(ComponentName componentName, IBinder binder) {

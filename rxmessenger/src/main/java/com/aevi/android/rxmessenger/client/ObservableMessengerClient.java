@@ -20,10 +20,10 @@ import android.util.Log;
 
 import com.aevi.android.rxmessenger.service.AbstractMessengerService;
 
-import io.reactivex.Observable;
-import io.reactivex.annotations.NonNull;
+import java.util.concurrent.Callable;
+
+import io.reactivex.*;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
@@ -31,8 +31,8 @@ import io.reactivex.subjects.Subject;
 /**
  * Client that sends requests to an {@link AbstractMessengerService} and returns an Observable stream of response data from that service.
  *
- * The connection to the service is created on the first call to {@link #sendMessage(String)} and kept open until the services sends end of stream
- * message or {@link #closeConnection()} is called on this class.
+ * The connection to the service is created via {@link #connect()} or on the first call to {@link #sendMessage(String)}
+ * and kept open until {@link #closeConnection()} is called (or the service dies/crashes/etc).
  *
  * The way a client is identified is based on a client id that is generated for each connection. Once a connection has been created, all messages
  * on the service end will appear to be from the same client, until it is closed. One re-opened, a new client id will be used.
@@ -83,10 +83,50 @@ public class ObservableMessengerClient {
     }
 
     /**
+     * Returns whether we are connected to the service or not.
+     *
+     * @return True if connected, false otherwise.
+     */
+    public boolean isConnected() {
+        return messengerConnection != null && messengerConnection.isBound();
+    }
+
+    /**
+     * Connect to the remote service using a new unique client id.
+     *
+     * The connection will then be kept open until the remote end closes it or {@link #closeConnection()} is called on this instance.
+     *
+     * Note that {@link #sendMessage(String)} will automatically connect if required to send a message.
+     *
+     * @return Completable that will complete on success and error on failure
+     */
+    public Completable connect() {
+        if (isConnected()) {
+            return Completable.complete();
+        }
+        return Completable.create(new CompletableOnSubscribe() {
+            @Override
+            public void subscribe(final CompletableEmitter completableEmitter) throws Exception {
+                bindToService().subscribe(new Consumer<MessengerConnection>() {
+                    @Override
+                    public void accept(MessengerConnection messengerConnection) throws Exception {
+                        ObservableMessengerClient.this.messengerConnection = messengerConnection;
+                        completableEmitter.onComplete();
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        completableEmitter.onError(throwable);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
      * Used to send a message to an {@link AbstractMessengerService} implementation and observe the responses from it.
      *
-     * The first time this is called, this will bind to the service. The connection will then be kept open until the remote end shuts down
-     * or {@link #closeConnection()} is called on this instance.
+     * This will connect to the service if not already connected when called.
      *
      * The stream returned will only return messages from the point of subscription.
      *
@@ -97,9 +137,14 @@ public class ObservableMessengerClient {
      */
     public Observable<String> sendMessage(final String requestData) {
         if (messengerConnection == null || !messengerConnection.isBound()) {
-            return bindServiceAndSendMessage(requestData);
+            return connectAndSendMessage(requestData);
         } else {
-            return getResponseObservable(new Consumer<Disposable>() {
+            // The service may have sent end of stream previously, so for each "round", we then create a new emitter
+            if (responseEmitter.hasComplete()) {
+                responseEmitter = PublishSubject.create();
+                messengerConnection.updateCallbackEmitter(responseEmitter);
+            }
+            return responseEmitter.doOnSubscribe(new Consumer<Disposable>() {
                 @Override
                 public void accept(Disposable disposable) throws Exception {
                     messengerConnection.sendMessage(requestData);
@@ -108,42 +153,18 @@ public class ObservableMessengerClient {
         }
     }
 
-    private Observable<String> bindServiceAndSendMessage(final String requestData) {
-        responseEmitter = PublishSubject.create();
-        final IncomingHandler incomingHandler = new IncomingHandler(this, responseEmitter);
-        return getResponseObservable(new Consumer<Disposable>() {
+    private Observable<String> connectAndSendMessage(final String requestData) {
+        return connect().andThen(Observable.defer(new Callable<ObservableSource<? extends String>>() {
             @Override
-            public void accept(Disposable disposable) throws Exception {
-                bindToService(incomingHandler)
-                        .subscribe(new Consumer<MessengerConnection>() {
-                            @Override
-                            public void accept(@NonNull MessengerConnection messengerConnection) throws Exception {
-                                ObservableMessengerClient.this.messengerConnection = messengerConnection;
-                                if (messengerConnection.isBound()) {
-                                    messengerConnection.sendMessage(requestData);
-                                } else {
-                                    responseEmitter.onError(new IllegalArgumentException("Unable to bind to service: " + serviceComponentName));
-                                }
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(@NonNull Throwable throwable) throws Exception {
-                                responseEmitter.onError(throwable);
-                            }
-                        });
-            }
-        });
-    }
-
-    private Observable<String> getResponseObservable(Consumer<Disposable> onSubscribeConsumer) {
-        return responseEmitter
-                .doFinally(new Action() {
+            public ObservableSource<? extends String> call() throws Exception {
+                return responseEmitter.doOnSubscribe(new Consumer<Disposable>() {
                     @Override
-                    public void run() throws Exception {
-                        responseEmitter = PublishSubject.create();
+                    public void accept(Disposable disposable) throws Exception {
+                        messengerConnection.sendMessage(requestData);
                     }
-                })
-                .doOnSubscribe(onSubscribeConsumer);
+                });
+            }
+        }));
     }
 
     /**
@@ -163,7 +184,9 @@ public class ObservableMessengerClient {
         }
     }
 
-    private Observable<MessengerConnection> bindToService(IncomingHandler incomingHandler) {
+    private Observable<MessengerConnection> bindToService() {
+        responseEmitter = PublishSubject.create();
+        IncomingHandler incomingHandler = new IncomingHandler(this, responseEmitter);
         Intent serviceIntent = new Intent();
         serviceIntent.setComponent(serviceComponentName);
         MessengerConnection messengerConnection = new MessengerConnection(incomingHandler);

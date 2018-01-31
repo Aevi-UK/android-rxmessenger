@@ -40,8 +40,8 @@ javadoc {
     options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
 
 def siteUrl = 'https://github.com/Aevi-UK/android-rx-messenger'
 def gitUrl = 'https://github.com/Aevi-UK/android-rx-messenger.git'

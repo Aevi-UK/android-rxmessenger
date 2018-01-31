@@ -132,8 +132,13 @@ public abstract class AbstractMessengerService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
+    public final IBinder onBind(Intent intent) {
+        onNewClient(intent);
         return incomingMessenger.getBinder();
+    }
+
+    protected void onNewClient(Intent intent) {
+        // No-op - can be overriden by subclasses
     }
 
     /**
