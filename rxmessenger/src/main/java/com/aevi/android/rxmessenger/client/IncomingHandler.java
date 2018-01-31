@@ -29,11 +29,15 @@ import static com.aevi.android.rxmessenger.MessageConstants.*;
 class IncomingHandler extends Handler {
 
     private final WeakReference<ObservableMessengerClient> serviceRef;
-    private final Subject<String> callbackEmitter;
+    private Subject<String> callbackEmitter;
 
     IncomingHandler(ObservableMessengerClient service, Subject<String> callbackEmitter) {
         super(Looper.getMainLooper());
         serviceRef = new WeakReference<>(service);
+        this.callbackEmitter = callbackEmitter;
+    }
+
+    void updateCallbackEmitter(Subject<String> callbackEmitter) {
         this.callbackEmitter = callbackEmitter;
     }
 
