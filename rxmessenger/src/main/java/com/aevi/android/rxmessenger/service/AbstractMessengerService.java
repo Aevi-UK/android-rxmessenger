@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.service;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -20,24 +20,21 @@ import android.content.pm.PackageManager;
 import android.os.*;
 import android.util.Log;
 
+import com.aevi.android.rxmessenger.MessageException;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.aevi.android.rxmessenger.MessageConstants.*;
+
+/**
+ * Base class for a messenger service that can receive requests and send back responses and errors.
+ */
 public abstract class AbstractMessengerService extends Service {
 
     private static final String TAG = AbstractMessengerService.class.getSimpleName();
-
-    protected static final int MESSAGE_REQUEST = 1;
-    protected static final int MESSAGE_RESPONSE = 4;
-    protected static final int MESSAGE_END_STREAM = 8;
-    protected static final int MESSAGE_ERROR = 16;
-
-    protected static final String KEY_DATA_REQUEST = "dataRequest";
-    protected static final String KEY_DATA_RESPONSE = "dataResponse";
-
-    protected static final String DATA_SENDER = "sender";
 
     protected Map<String, Messenger> clientMap = new HashMap<>();
 
@@ -69,17 +66,18 @@ public abstract class AbstractMessengerService extends Service {
     private void handleIncomingAction(Message msg) {
         Bundle data = msg.getData();
         if (data.containsKey(KEY_DATA_REQUEST)) {
-            String clientId = UUID.randomUUID().toString();
+            String clientId = data.getString(KEY_CLIENT_ID, UUID.randomUUID().toString());
             String requestJson = data.getString(KEY_DATA_REQUEST);
             try {
                 if (requestJson != null) {
+                    Log.d(TAG, "Received valid message from client: " + clientId);
                     if (msg.replyTo != null) {
                         clientMap.put(clientId, msg.replyTo);
                     }
                     String callingPackage = getCallingPackage(msg);
                     handleRequest(clientId, requestJson, callingPackage);
                 } else {
-                    Log.e(TAG, "Invalid VAA data: " + requestJson);
+                    Log.e(TAG, "Invalid message data");
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Invalid data", e);
@@ -100,7 +98,7 @@ public abstract class AbstractMessengerService extends Service {
     }
 
     /**
-     * Implemented by a parent class
+     * To be implemented by the subclass to handle the request.
      *
      * @param clientId    The id of the client. Should be used to return messages back to the originating client
      * @param requestData Any request data to be sent back
@@ -124,7 +122,7 @@ public abstract class AbstractMessengerService extends Service {
         if (b == null) {
             b = new Bundle();
         }
-        b.putString(DATA_SENDER, new ComponentName(getPackageName(), getClass().getName()).flattenToString());
+        b.putString(KEY_DATA_SENDER, new ComponentName(getPackageName(), getClass().getName()).flattenToString());
         Message msg = Message.obtain(null, what);
         msg.setData(b);
         if (withReply) {
@@ -134,8 +132,13 @@ public abstract class AbstractMessengerService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
+    public final IBinder onBind(Intent intent) {
+        onNewClient(intent);
         return incomingMessenger.getBinder();
+    }
+
+    protected void onNewClient(Intent intent) {
+        // No-op - can be overriden by subclasses
     }
 
     /**

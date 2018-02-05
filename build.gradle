@@ -1,3 +1,5 @@
+version = "3.0.0"
+
 buildscript {
     repositories {
         jcenter()
@@ -7,8 +9,6 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.0.1'
     }
 }
-
-version = "2.0.1"
 
 allprojects {
 
@@ -21,6 +21,9 @@ allprojects {
         jcenter()
         mavenCentral()
         google()
+        maven {
+            url "http://sdk-public-artifacts.s3-website-eu-west-1.amazonaws.com/maven2"
+        }
     }
 }
 

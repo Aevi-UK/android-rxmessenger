@@ -11,14 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.service;
 
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.*;
 
+import com.aevi.android.rxmessenger.MessageException;
+import com.aevi.android.rxmessenger.MockShadowMessenger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -36,12 +34,10 @@ import java.util.UUID;
 
 import io.reactivex.annotations.NonNull;
 
-import static com.aevi.android.rxmessenger.AbstractMessengerService.*;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Config(sdk = Build.VERSION_CODES.LOLLIPOP, manifest = Config.NONE, shadows = {MockShadowMessenger.class})

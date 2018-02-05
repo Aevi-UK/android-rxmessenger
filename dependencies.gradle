@@ -1,29 +1,40 @@
 ext {
 
-    sourceCompatibility = JavaVersion.VERSION_1_7
-
-    androidBuildVersion = "26.0.2"
-    projectTargetSdkVersion = 26
-    projectMinSdkVersion = 22
-
-    supportLibrary = '26.1.0'
+    archLifecycleVersion = '1.0.3'
+    archLifecycleJava8Version = '1.1.0'
 
     okioVersion = '1.13.0'
     gsonVersion = '2.8.0'
     rxJavaVersion = '2.1.0'
+    archLifecycleVersion = '1.0.3'
+    archLifecycleJava8Version = '1.1.0'
+
+    supportLibrary = '27.0.2'
+    butterKnifeVersion = '8.8.1'
 
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     assertJVersion = '2.7.0'
-    androidMockableVersion = '23'
+    androidMockableVersion = '26'
     robolectricVersion = '3.3.2'
 
+    presentationDependencies = [
+            butterKnife      : "com.jakewharton:butterknife:$butterKnifeVersion",
+            support          : "com.android.support:support-v4:$supportLibrary",
+            recyclerView     : "com.android.support:recyclerview-v7:$supportLibrary",
+            cardView         : "com.android.support:cardview-v7:$supportLibrary",
+            appCompat        : "com.android.support:appcompat-v7:$supportLibrary",
+            supportAnnotation: "com.android.support:support-annotations:$supportLibrary",
+            design           : "com.android.support:design:$supportLibrary"
+    ]
+
     domainDependencies = [
-            androidMockable: "com.google:android-mockable-default-values:$androidMockableVersion",
-            okio           : "com.squareup.okio:okio:$okioVersion",
-            rxJava         : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
-            gson           : "com.google.code.gson:gson:$gsonVersion",
-            support        : "com.android.support:support-v4:$supportLibrary",
+            androidMockable   : "com.google:android-mockable-default-values:$androidMockableVersion",
+            okio              : "com.squareup.okio:okio:$okioVersion",
+            rxJava            : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
+            gson              : "com.google.code.gson:gson:$gsonVersion",
+            archLifecycle     : "android.arch.lifecycle:runtime:$archLifecycleVersion",
+            archLifecycleJava8: "android.arch.lifecycle:common-java8:$archLifecycleJava8Version"
     ]
 
     testDependencies = [
@@ -32,5 +43,9 @@ ext {
             assertJ               : "org.assertj:assertj-core:$assertJVersion",
             robolectric           : "org.robolectric:robolectric:$robolectricVersion",
             robolectricannotations: "org.robolectric:robolectric-annotations:$robolectricVersion",
+    ]
+
+    annotationDependencies = [
+            butterKnife: "com.jakewharton:butterknife-compiler:$butterKnifeVersion"
     ]
 }
