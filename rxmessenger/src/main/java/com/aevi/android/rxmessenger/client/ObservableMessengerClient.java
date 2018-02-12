@@ -177,7 +177,11 @@ public class ObservableMessengerClient {
     public void closeConnection() {
         if (messengerConnection != null) {
             Log.d(TAG, "Closing connection with id: " + messengerConnection.getClientId());
-            context.unbindService(messengerConnection);
+            try {
+                context.unbindService(messengerConnection);
+            } catch (Throwable t) {
+                // Ignore
+            }
             messengerConnection = null;
             responseEmitter.onComplete();
             responseEmitter = null;
