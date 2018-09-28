@@ -10,6 +10,7 @@ import com.aevi.android.rxmessenger.service.AbstractMessengerService;
 import com.google.gson.Gson;
 
 import static android.arch.lifecycle.Lifecycle.Event.ON_DESTROY;
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 public class SampleService extends AbstractMessengerService {
 
@@ -39,6 +40,7 @@ public class SampleService extends AbstractMessengerService {
     private void startObservableActivity(final String clientId) {
         responseSent = false;
         Intent intent = new Intent(this, SampleActivity.class);
+        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
         ObservableActivityHelper<String> activityHelper = ObservableActivityHelper.createInstance(this, intent);
 
         // Registering to this allows the service to react to lifecycle events from the activity it has started
