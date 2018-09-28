@@ -58,4 +58,10 @@ public class ClientActivity extends AppCompatActivity {
         messengerClient.closeConnection();
         status.setText(R.string.not_connected);
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        messengerClient.closeConnection();
+    }
 }
