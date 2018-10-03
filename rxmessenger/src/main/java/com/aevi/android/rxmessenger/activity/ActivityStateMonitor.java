@@ -1,6 +1,7 @@
 package com.aevi.android.rxmessenger.activity;
 
 
+import android.app.Activity;
 import android.arch.lifecycle.DefaultLifecycleObserver;
 import android.arch.lifecycle.Lifecycle;
 import android.arch.lifecycle.LifecycleOwner;
@@ -63,7 +64,14 @@ public class ActivityStateMonitor implements DefaultLifecycleObserver {
     public void onDestroy(@NonNull LifecycleOwner owner) {
         onActivityStateChange(owner, Lifecycle.Event.ON_DESTROY);
         owner.getLifecycle().removeObserver(this);
-        observableActivityHelper.removeFromMap();
-        eventSubject.onComplete();
+        boolean confChange = false;
+        if (owner instanceof Activity) {
+            Activity activity = (Activity) owner;
+            confChange = activity.isChangingConfigurations();
+        }
+        if (!confChange) {
+            observableActivityHelper.removeFromMap();
+            eventSubject.onComplete();
+        }
     }
 }
