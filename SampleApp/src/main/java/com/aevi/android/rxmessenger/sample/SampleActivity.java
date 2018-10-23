@@ -53,6 +53,11 @@ public class SampleActivity extends AppCompatActivity {
         activityHelper.publishResponse(response);
     }
 
+    @OnClick(R.id.finish_client)
+    public void finishClient() {
+        ActivityFinishRequestListener.getInstance().finishActivities();
+    }
+
     @OnClick(R.id.finish)
     public void onFinish() {
         finish();

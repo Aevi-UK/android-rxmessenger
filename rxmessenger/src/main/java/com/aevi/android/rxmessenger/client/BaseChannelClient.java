@@ -11,21 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
 
-public interface MessageConstants {
+package com.aevi.android.rxmessenger.client;
 
-    int MESSAGE_REQUEST = 1;
-    int MESSAGE_RESPONSE = 4;
-    int MESSAGE_END_STREAM = 8;
-    int MESSAGE_ERROR = 16;
+import android.content.ComponentName;
+import android.content.Context;
 
-    String KEY_CLIENT_ID = "clientId";
-    String KEY_DATA_REQUEST = "dataRequest";
-    String KEY_DATA_RESPONSE = "dataResponse";
-    String KEY_DATA_SENDER = "sender";
-    String KEY_CHANNEL_TYPE = "channel";
+public abstract class BaseChannelClient {
 
-    String CHANNEL_MESSENGER = "messenger";
-    String CHANNEL_WEBSOCKET = "websocket";
+    protected final Context context;
+    final ComponentName serviceComponentName;
+
+    BaseChannelClient(Context context, ComponentName componentName) {
+        this.context = context;
+        this.serviceComponentName = componentName;
+    }
 }

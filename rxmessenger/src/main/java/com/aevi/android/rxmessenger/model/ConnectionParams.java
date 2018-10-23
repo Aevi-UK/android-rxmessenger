@@ -11,21 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.aevi.android.rxmessenger;
+package com.aevi.android.rxmessenger.model;
 
-public interface MessageConstants {
+public class ConnectionParams {
 
-    int MESSAGE_REQUEST = 1;
-    int MESSAGE_RESPONSE = 4;
-    int MESSAGE_END_STREAM = 8;
-    int MESSAGE_ERROR = 16;
+    private final String hostAddress;
+    private final int port;
 
-    String KEY_CLIENT_ID = "clientId";
-    String KEY_DATA_REQUEST = "dataRequest";
-    String KEY_DATA_RESPONSE = "dataResponse";
-    String KEY_DATA_SENDER = "sender";
-    String KEY_CHANNEL_TYPE = "channel";
+    public ConnectionParams(String hostAddress, int port) {
+        this.hostAddress = hostAddress;
+        this.port = port;
+    }
 
-    String CHANNEL_MESSENGER = "messenger";
-    String CHANNEL_WEBSOCKET = "websocket";
+    public String getHostAddress() {
+        return hostAddress;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }

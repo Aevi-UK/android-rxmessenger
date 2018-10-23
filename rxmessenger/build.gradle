@@ -17,12 +17,16 @@ ext.artifactId = 'rxmessenger'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile domainDependencies.gson
-    compile domainDependencies.rxJava
-    compile domainDependencies.okio
-    provided domainDependencies.androidMockable
-    provided domainDependencies.archLifecycle
-    provided domainDependencies.archLifecycleJava8
+    implementation domainDependencies.gson
+    implementation domainDependencies.rxJava
+    implementation domainDependencies.okio
+    implementation domainDependencies.okHttp
+    implementation domainDependencies.nanoHttpd
+    implementation domainDependencies.nanoWebsockets
+
+    implementation domainDependencies.androidMockable
+    implementation domainDependencies.archLifecycle
+    implementation domainDependencies.archLifecycleJava8
 
     testCompile domainDependencies.androidMockable
     testCompile testDependencies.junit

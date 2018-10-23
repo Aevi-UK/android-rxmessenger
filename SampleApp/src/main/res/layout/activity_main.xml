@@ -35,6 +35,14 @@
         android:layout_marginTop="10dp"
         android:text="@string/send_request"/>
 
+
+    <Button
+        android:id="@+id/send_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/send_end"/>
+
     <Button
         android:id="@+id/disconnect"
         android:layout_width="wrap_content"

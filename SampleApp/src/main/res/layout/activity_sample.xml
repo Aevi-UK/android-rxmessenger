@@ -29,6 +29,13 @@
         android:text="@string/send_response"/>
 
     <Button
+        android:id="@+id/finish_client"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/finish_client"/>
+
+    <Button
         android:id="@+id/finish"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -17,12 +17,15 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
-import android.os.*;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 
 import com.aevi.android.rxmessenger.MessageException;
 import com.aevi.android.rxmessenger.MockShadowMessenger;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +38,6 @@ import org.robolectric.shadows.ShadowApplication;
 import org.robolectric.shadows.ShadowLog;
 import org.robolectric.shadows.ShadowPackageManager;
 
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +45,13 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 
-import static com.aevi.android.rxmessenger.MessageConstants.*;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
+import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_END_STREAM;
+import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
+import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_RESPONSE;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -68,7 +76,7 @@ public class ObservableMessengerClientTest {
     }
 
     @Test
-    public void checkWillHandleNoPaymentControlServiceWithError() throws RemoteException {
+    public void checkWillHandleNoServiceWithError() throws RemoteException {
         TestObserver<String> obs = createObservableSendDataAndSubscribe(new DataObject());
 
         obs.assertError(RuntimeException.class);
@@ -91,10 +99,7 @@ public class ObservableMessengerClientTest {
         sendReply(response);
         observableMessengerClient.closeConnection();
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertComplete()
-                .assertValue(response.toJson());
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertComplete().assertValue(response.toJson());
 
         verifyServiceIsUnbound();
     }
@@ -149,10 +154,7 @@ public class ObservableMessengerClientTest {
         DataObject response = new DataObject();
         sendReply(response);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertNotComplete()
-                .assertValue(response.toJson());
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValue(response.toJson());
     }
 
     @Test
@@ -170,10 +172,7 @@ public class ObservableMessengerClientTest {
         sendReply(response3);
         sendReply(response4);
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertNotComplete()
-                .assertValues(response1.toJson(), response2.toJson(), response3.toJson(), response4.toJson());
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertNotComplete().assertValues(response1.toJson(), response2.toJson(), response3.toJson(), response4.toJson());
     }
 
     @Test
@@ -186,10 +185,7 @@ public class ObservableMessengerClientTest {
         sendReply(response);
         sendEndStream();
 
-        obs.awaitDone(2000, TimeUnit.MILLISECONDS)
-                .assertNoErrors()
-                .assertComplete()
-                .assertValue(response.toJson());
+        obs.awaitDone(2000, TimeUnit.MILLISECONDS).assertNoErrors().assertComplete().assertValue(response.toJson());
     }
 
     @Test
@@ -303,8 +299,7 @@ public class ObservableMessengerClientTest {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
         mockMessageService = new MockMessageService();
 
-        shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS),
-                mockMessageService.onBind(null));
+        shadowApplication.setComponentNameAndServiceForBindService(new ComponentName(MOCK_SERVICE_PACKAGE, MOCK_SERVICE_CLASS), mockMessageService.onBind(null));
 
         Intent intent = new Intent();
         intent.setComponent(SERVICE_COMPONENT_NAME);
@@ -323,42 +318,5 @@ public class ObservableMessengerClientTest {
         }
     }
 
-    private class DataObject {
-
-        transient final Gson gson = new GsonBuilder().create();
-
-        private String id;
-
-        public DataObject() {
-            id = UUID.randomUUID().toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String toJson() {
-            return gson.toJson(this);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            DataObject that = (DataObject) o;
-
-            return id != null ? id.equals(that.id) : that.id == null;
-        }
-
-        @Override
-        public int hashCode() {
-            return id != null ? id.hashCode() : 0;
-        }
-    }
 
 }
