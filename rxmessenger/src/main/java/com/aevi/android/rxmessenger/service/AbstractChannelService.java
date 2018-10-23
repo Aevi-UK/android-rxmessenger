@@ -41,8 +41,12 @@ import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
 
 /**
  * Base class for an Android service that can be used receive client requests and send back responses and errors over various channels.
- *
- * This class will not handle
+ * <p>
+ * As with all Android {@link Service} classes this class will keep running until {@link #stopSelf()} is called. It is the responsibility of
+ * implementations of this class to ensure the stop method is called at the correct time. Alternatively the  {@link #setStopSelfOnEndOfStream(boolean)}
+ * method can be used to set a flag which will automatically stop this service once all {@link com.aevi.android.rxmessenger.ChannelClient} instances
+ * have unbound from this service.
+ * </p>
  */
 public abstract class AbstractChannelService extends Service {
 
@@ -107,6 +111,12 @@ public abstract class AbstractChannelService extends Service {
             return incomingMessenger.getBinder();
         }
     }
+
+    /**
+     * Set this flag if you want the service to stop itself once all client channels have unbound
+     *
+     * @param stopSelfOnEndOfStream If true this service will stop once all client channels have unbound
+     */
     public void setStopSelfOnEndOfStream(boolean stopSelfOnEndOfStream) {
         this.stopSelfOnEndOfStream = stopSelfOnEndOfStream;
     }
@@ -181,7 +191,7 @@ public abstract class AbstractChannelService extends Service {
     }
 
     private void checkForStop() {
-        if(channelServerMap.size() == 0 && stopSelfOnEndOfStream) {
+        if (channelServerMap.size() == 0 && stopSelfOnEndOfStream) {
             stopSelf();
         }
     }
