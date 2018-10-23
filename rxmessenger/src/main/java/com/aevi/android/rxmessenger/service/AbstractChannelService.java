@@ -47,6 +47,13 @@ import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
  * method can be used to set a flag which will automatically stop this service once all {@link com.aevi.android.rxmessenger.ChannelClient} instances
  * have unbound from this service.
  * </p>
+ * If you want to support the websocket channel implementation in your application then you must include the following network permissions in your
+ * manifest:
+ * <code>
+ * <uses-permission android:name="android.permission.INTERNET"/>
+ * <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+ * <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+ * </code>
  */
 public abstract class AbstractChannelService extends Service {
 
