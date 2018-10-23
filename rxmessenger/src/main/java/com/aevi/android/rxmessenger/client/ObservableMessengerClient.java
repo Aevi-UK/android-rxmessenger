@@ -104,7 +104,7 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
      * Connect to the remote service using a new unique client id.
      * <p>
      * The connection will then be kept open until the remote end closes it or {@link #closeConnection()} is called on this instance.
-     * <p>
+     * </p>
      * Note that {@link #sendMessage(String)} will automatically connect if required to send a message.
      *
      * @return Completable that will complete on success and error on failure
@@ -136,10 +136,11 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
      * Used to send a message to an {@link AbstractChannelService} implementation and observe the responses from it.
      * <p>
      * This will connect to the service if not already connected when called.
-     * <p>
+     * </p>
      * The stream returned will only return messages from the point of subscription.
      * <p>
      * NOTE: The messages are only sent once a client is subscribed to the Observable.
+     * </p>
      *
      * @param requestData The data to send (usually a serialised JSON object)
      * @return An Observable stream of Strings containing data that the service sends back to this client
@@ -180,7 +181,7 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
      * Close the connection to the service.
      * <p>
      * This will complete the response stream returned from {@link #sendMessage(String)}.
-     * <p>
+     * </p>
      * Calling {@link #sendMessage(String)} after this point will create a new connection.
      */
     public void closeConnection() {

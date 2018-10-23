@@ -26,6 +26,9 @@ import io.reactivex.subjects.PublishSubject;
 
 import static fi.iki.elonen.NanoWSD.WebSocketFrame.CloseCode.NormalClosure;
 
+/**
+ * Internal class used to handle a websocket connection
+ */
 public class WebSocketConnection extends NanoWSD.WebSocket {
 
     private static final String TAG = WebSocketConnection.class.getSimpleName();

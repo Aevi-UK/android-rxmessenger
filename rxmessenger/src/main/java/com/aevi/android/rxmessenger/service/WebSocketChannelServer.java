@@ -51,7 +51,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
     private final Context context;
 
-    private boolean fromEndStream = false;
+    private boolean disconnectedWithEndStreamCall = false;
 
     WebSocketChannelServer(Context context, String serviceComponentName) {
         super(serviceComponentName);
@@ -73,9 +73,17 @@ public class WebSocketChannelServer extends MessengerChannelServer {
     }
 
     private void startServer() {
-        webSocketServer = WebSocketServer.create(context);
+        webSocketServer = createWebSocketServer();
         // start web socket server here and send message to client containing connection details
-        webSocketServer.startServer().subscribe(new Consumer<WebSocketConnection>() {
+        webSocketServer.startServer().doOnSubscribe(new Consumer<Disposable>() {
+            @Override
+            public void accept(Disposable disposable) throws Exception {
+                ConnectionParams connectionParams = new ConnectionParams(webSocketServer.getHostname(), webSocketServer.getPort());
+                if (!WebSocketChannelServer.super.send(gson.toJson(connectionParams))) {
+                    Log.d(TAG, "Failed to send connection details to client");
+                }
+            }
+        }).subscribe(new Consumer<WebSocketConnection>() {
             @Override
             public void accept(WebSocketConnection webSocketConnection) throws Exception {
                 Log.d(TAG, "Websocket server started");
@@ -90,10 +98,10 @@ public class WebSocketChannelServer extends MessengerChannelServer {
             }
         });
 
-        ConnectionParams connectionParams = new ConnectionParams(webSocketServer.getHostname(), webSocketServer.getPort());
-        if (!super.send(gson.toJson(connectionParams))) {
-            Log.d(TAG, "Failed to send connection details to client");
-        }
+    }
+
+    protected WebSocketServer createWebSocketServer() {
+        return WebSocketServer.create(context);
     }
 
     private void handleWebSocketDisconnect(WebSocketConnection webSocketConnection) {
@@ -121,7 +129,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
                     webSocketServer = null;
                 }
 
-                if (fromEndStream) {
+                if (disconnectedWithEndStreamCall) {
                     sendEndStreamBelow();
                 }
                 clientDispose();
@@ -170,7 +178,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
     public boolean sendEndStream() {
         if (webSocketConnection != null) {
             webSocketConnection.disconnect();
-            fromEndStream = true;
+            disconnectedWithEndStreamCall = true;
             return true;
         }
         return false;

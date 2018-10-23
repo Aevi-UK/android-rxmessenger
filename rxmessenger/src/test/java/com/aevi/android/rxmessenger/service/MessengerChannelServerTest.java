@@ -50,18 +50,13 @@ public class MessengerChannelServerTest {
     private String CLIENT_ID = "67367";
     private String COMPONENT_NAME = "com.rxmessenger/.IsKing";
 
-    class TestMessengerChannelServer extends MessengerChannelServer {
-        TestMessengerChannelServer(String serviceComponentName) {
-            super(serviceComponentName);
-        }
-    }
 
     @Before
     public void setup() {
         initMocks(this);
         when(messenger.getBinder()).thenReturn(binder);
 
-        messengerChannelServer = new TestMessengerChannelServer(COMPONENT_NAME);
+        messengerChannelServer = new MessengerChannelServer(COMPONENT_NAME);
     }
 
     @Test

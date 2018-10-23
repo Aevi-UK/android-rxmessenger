@@ -30,6 +30,9 @@ import io.reactivex.subjects.PublishSubject;
 
 import static android.content.Context.WIFI_SERVICE;
 
+/**
+ * Internal class used to create a websocket server that channels can use to send/receive messages
+ */
 public class WebSocketServer extends NanoWSD {
 
     private static final String TAG = WebSocketServer.class.getSimpleName();

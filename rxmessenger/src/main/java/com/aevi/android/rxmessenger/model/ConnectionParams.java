@@ -13,6 +13,9 @@
  */
 package com.aevi.android.rxmessenger.model;
 
+/**
+ * POJO passed between client and server to provide websocket host address and port
+ */
 public class ConnectionParams {
 
     private final String hostAddress;
@@ -23,10 +26,16 @@ public class ConnectionParams {
         this.port = port;
     }
 
+    /**
+     * @return The host address to connect to
+     */
     public String getHostAddress() {
         return hostAddress;
     }
 
+    /**
+     * @return The port to connect to
+     */
     public int getPort() {
         return port;
     }

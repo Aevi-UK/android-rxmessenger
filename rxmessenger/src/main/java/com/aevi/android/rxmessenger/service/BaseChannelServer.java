@@ -46,7 +46,7 @@ public abstract class BaseChannelServer implements ChannelServer {
     }
 
     @Override
-    public String getLastMessage() {
+    public String getLastMessageBlocking() {
         return clientMessages.blockingLatest().iterator().next();
     }
 

@@ -6,7 +6,7 @@ ext {
     okioVersion = '1.16.0'
     okHttpVersion = '3.11.0'
     gsonVersion = '2.8.0'
-    rxJavaVersion = '2.1.0'
+    rxJavaVersion = '2.2.2'
     rxAndroidVersion = '2.1.0'
     archLifecycleVersion = '1.0.3'
     archLifecycleJava8Version = '1.1.0'

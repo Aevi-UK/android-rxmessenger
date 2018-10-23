@@ -17,6 +17,9 @@ package com.aevi.android.rxmessenger.client;
 import android.content.ComponentName;
 import android.content.Context;
 
+/**
+ * Base class that {@link com.aevi.android.rxmessenger.ChannelClient} can use to hold some common values
+ */
 public abstract class BaseChannelClient {
 
     protected final Context context;

@@ -54,7 +54,7 @@ public interface ChannelServer extends IBinder.DeathRecipient {
      *
      * @return The last message
      */
-    String getLastMessage();
+    String getLastMessageBlocking();
 
     /**
      * Allows a user of this channel to subscribe to client messages
