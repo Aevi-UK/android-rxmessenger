@@ -41,6 +41,8 @@ import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
 
 /**
  * Base class for an Android service that can be used receive client requests and send back responses and errors over various channels.
+ *
+ * This class will not handle
  */
 public abstract class AbstractChannelService extends Service {
 
@@ -50,6 +52,8 @@ public abstract class AbstractChannelService extends Service {
 
     private String serviceName;
     protected IncommingHandler incomingHandler;
+
+    private boolean stopSelfOnEndOfStream;
 
     static class IncommingHandler extends Handler {
 
@@ -102,6 +106,9 @@ public abstract class AbstractChannelService extends Service {
             channelServerMap.put(clientId, channelServer);
             return incomingMessenger.getBinder();
         }
+    }
+    public void setStopSelfOnEndOfStream(boolean stopSelfOnEndOfStream) {
+        this.stopSelfOnEndOfStream = stopSelfOnEndOfStream;
     }
 
     private String getServiceName() {
@@ -168,8 +175,15 @@ public abstract class AbstractChannelService extends Service {
                 channel.clientDispose();
             }
             channelServerMap.remove(clientId);
+            checkForStop();
         }
         return false;
+    }
+
+    private void checkForStop() {
+        if(channelServerMap.size() == 0 && stopSelfOnEndOfStream) {
+            stopSelf();
+        }
     }
 
     /**
