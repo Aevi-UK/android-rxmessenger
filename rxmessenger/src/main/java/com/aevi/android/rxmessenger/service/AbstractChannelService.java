@@ -189,7 +189,7 @@ public abstract class AbstractChannelService extends Service {
             Log.d(TAG, String.format("Unbound from client %s", clientId));
             ChannelServer channel = getTargetForClientId(clientId);
             if (channel != null) {
-                channel.clientDispose();
+                channel.disposeClient();
             }
             channelServerMap.remove(clientId);
             checkForStop();

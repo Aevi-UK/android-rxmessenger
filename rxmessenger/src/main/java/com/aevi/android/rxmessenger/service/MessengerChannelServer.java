@@ -68,9 +68,9 @@ public class MessengerChannelServer extends BaseChannelServer {
     }
 
     @Override
-    public void clientDispose() {
+    public void disposeClient() {
         Log.d(TAG, "Client dispose: " + serviceComponentName);
-        super.clientDispose();
+        super.disposeClient();
     }
 
     @Override
@@ -92,7 +92,7 @@ public class MessengerChannelServer extends BaseChannelServer {
     @Override
     public boolean sendEndStream() {
         Message message = createMessage(null, MESSAGE_END_STREAM);
-        clientClose();
+        closeClient();
         return send(message);
     }
 

@@ -40,7 +40,7 @@ public class SampleService extends AbstractChannelService implements ChannelServ
                     // This is just for illustrating how to end stream from here - in reality the client would never request this
                     channelServer.send(gson.toJson(new SampleMessage(MessageTypes.RESPONSE,"You asked to end")));
                     channelServer.sendEndStream();
-                    channelServer.clientClose();
+                    channelServer.closeClient();
                     break;
             }
         });

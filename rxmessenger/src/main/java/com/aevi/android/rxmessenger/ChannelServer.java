@@ -66,12 +66,12 @@ public interface ChannelServer extends IBinder.DeathRecipient {
     /**
      * Called by the hosting service when the client is unbound
      */
-    void clientDispose();
+    void disposeClient();
 
     /**
      * Called to close the connection with the client
      */
-    void clientClose();
+    void closeClient();
 
     /**
      * Allows an observer of this client to listen for dispose and close events

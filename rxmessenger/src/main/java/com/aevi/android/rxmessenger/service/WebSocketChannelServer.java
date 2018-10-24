@@ -177,7 +177,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
                 if (disconnectedWithEndStreamCall) {
                     sendEndStreamBelow();
                 }
-                clientDispose();
+                disposeClient();
             }
         });
     }

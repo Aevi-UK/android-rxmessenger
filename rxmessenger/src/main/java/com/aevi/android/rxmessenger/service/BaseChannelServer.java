@@ -42,7 +42,7 @@ public abstract class BaseChannelServer implements ChannelServer {
 
     @Override
     public void binderDied() {
-        clientDispose();
+        disposeClient();
     }
 
     @Override
@@ -85,7 +85,7 @@ public abstract class BaseChannelServer implements ChannelServer {
     }
 
     @Override
-    public void clientDispose() {
+    public void disposeClient() {
         clientMessages.onComplete();
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
@@ -98,7 +98,7 @@ public abstract class BaseChannelServer implements ChannelServer {
     }
 
     @Override
-    public void clientClose() {
+    public void closeClient() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
