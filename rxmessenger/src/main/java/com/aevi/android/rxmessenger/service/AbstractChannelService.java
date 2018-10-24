@@ -62,15 +62,15 @@ public abstract class AbstractChannelService extends Service {
     protected final Map<String, ChannelServer> channelServerMap = new HashMap<>();
 
     private String serviceName;
-    protected IncommingHandler incomingHandler;
+    protected IncomingHandler incomingHandler;
 
     private boolean stopSelfOnEndOfStream;
 
-    static class IncommingHandler extends Handler {
+    static class IncomingHandler extends Handler {
 
         private final WeakReference<AbstractChannelService> serviceRef;
 
-        IncommingHandler(AbstractChannelService abstractChannelService) {
+        IncomingHandler(AbstractChannelService abstractChannelService) {
             serviceRef = new WeakReference<>(abstractChannelService);
         }
 
@@ -84,9 +84,7 @@ public abstract class AbstractChannelService extends Service {
                     AbstractChannelService service = serviceRef.get();
                     if (service != null) {
                         ChannelServer channelServer = service.getChannelServer(msgClientId, channelType);
-                        if (channelServer != null) {
-                            channelServer.handleMessage(msg);
-                        }
+                        channelServer.handleMessage(msg);
                     }
                     break;
                 default:
@@ -111,7 +109,7 @@ public abstract class AbstractChannelService extends Service {
             serviceName = getServiceName();
 
             ChannelServer channelServer = getChannelServer(clientId, channelType);
-            incomingHandler = new IncommingHandler(this);
+            incomingHandler = new IncomingHandler(this);
             Messenger incomingMessenger = getMessenger();
             monitorForDeath(incomingMessenger, channelServer);
             channelServerMap.put(clientId, channelServer);
