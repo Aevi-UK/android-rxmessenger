@@ -24,7 +24,9 @@ import java.io.IOException;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Scheduler;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.CompletableSubject;
 import io.reactivex.subjects.PublishSubject;
 
@@ -69,6 +71,7 @@ public class WebSocketChannelServerTest {
     @Mock
     Messenger replyToMessenger;
 
+    private Scheduler testScheduler = Schedulers.trampoline();
     private PublishSubject<String> messageStream = PublishSubject.create();
     private CompletableSubject disconnectCompletable = CompletableSubject.create();
 
@@ -263,6 +266,11 @@ public class WebSocketChannelServerTest {
         @Override
         protected WebSocketServer createWebSocketServer() {
             return webSocketServer;
+        }
+
+        @Override
+        protected Scheduler getSendScheduler() {
+            return testScheduler;
         }
     }
 }

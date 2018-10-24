@@ -28,8 +28,12 @@ import com.google.gson.GsonBuilder;
 import java.io.IOException;
 
 import io.reactivex.CompletableObserver;
+import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 
 import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
 
@@ -48,6 +52,8 @@ public class WebSocketChannelServer extends MessengerChannelServer {
     private WebSocketServer webSocketServer;
     private WebSocketConnection webSocketConnection;
     private Gson gson = new GsonBuilder().create();
+
+    private PublishSubject<String> sendMessageQueue;
 
     private final Context context;
 
@@ -73,6 +79,11 @@ public class WebSocketChannelServer extends MessengerChannelServer {
     }
 
     private void startServer() {
+        setupSendQueue();
+        setupWebServer();
+    }
+
+    private void setupWebServer() {
         webSocketServer = createWebSocketServer();
         // start web socket server here and send message to client containing connection details
         webSocketServer.startServer().doOnSubscribe(new Consumer<Disposable>() {
@@ -83,7 +94,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
                     Log.d(TAG, "Failed to send connection details to client");
                 }
             }
-        }).subscribe(new Consumer<WebSocketConnection>() {
+        }).observeOn(getSendScheduler()).subscribe(new Consumer<WebSocketConnection>() {
             @Override
             public void accept(WebSocketConnection webSocketConnection) throws Exception {
                 Log.d(TAG, "Websocket server started");
@@ -97,7 +108,40 @@ public class WebSocketChannelServer extends MessengerChannelServer {
                 send(new MessageException("websocketError", "Unable to setup websocket server: " + throwable.getMessage()));
             }
         });
+    }
 
+    private void setupSendQueue() {
+        if (sendMessageQueue == null || sendMessageQueue.hasComplete()) {
+            sendMessageQueue = PublishSubject.create();
+        }
+
+        sendMessageQueue.observeOn(getSendScheduler()).doOnComplete(new Action() {
+            @Override
+            public void run() throws Exception {
+                finishAndCleanUp();
+            }
+        }).subscribe(new Consumer<String>() {
+            @Override
+            public void accept(String message) throws Exception {
+                try {
+                    if (webSocketConnection != null && webSocketConnection.isConnected()) {
+                        webSocketConnection.send(message);
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to send message via websocket", e);
+                }
+            }
+        });
+    }
+
+    private void finishAndCleanUp() {
+        if (webSocketConnection != null) {
+            webSocketConnection.disconnect();
+        }
+    }
+
+    protected Scheduler getSendScheduler() {
+        return Schedulers.io();
     }
 
     protected WebSocketServer createWebSocketServer() {
@@ -124,6 +168,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
             }
 
             private void disconnected() {
+                sendMessageQueue.onComplete();
                 if (webSocketServer != null) {
                     webSocketServer.stopServer();
                     webSocketServer = null;
@@ -157,30 +202,23 @@ public class WebSocketChannelServer extends MessengerChannelServer {
         });
     }
 
+
     @Override
-    public boolean send(String message) {
-        try {
-            if (webSocketConnection != null && webSocketConnection.isConnected()) {
-                // normal message sends go over web socket channel
-                webSocketConnection.send(message);
-                return true;
-            } else {
-                // fallback to messenger
-                return super.send(message);
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to send message via websocket", e);
+    public boolean send(final String message) {
+        if (webSocketConnection != null && webSocketConnection.isConnected()) {
+            // normal message sends go over web socket channel
+            sendMessageQueue.onNext(message);
+            return true;
+        } else {
+            // fallback to messenger
+            return super.send(message);
         }
-        return false;
     }
 
     @Override
     public boolean sendEndStream() {
-        if (webSocketConnection != null) {
-            webSocketConnection.disconnect();
-            disconnectedWithEndStreamCall = true;
-            return true;
-        }
-        return false;
+        sendMessageQueue.onComplete();
+        disconnectedWithEndStreamCall = true;
+        return true;
     }
 }

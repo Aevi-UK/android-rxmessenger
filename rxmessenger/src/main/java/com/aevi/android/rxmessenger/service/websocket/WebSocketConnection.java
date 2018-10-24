@@ -99,7 +99,7 @@ public class WebSocketConnection extends NanoWSD.WebSocket {
 
     @Override
     protected void onException(IOException e) {
-        Log.e(TAG, "Websocket exception: " + e.getMessage());
+        Log.e(TAG, "Websocket exception", e);
         disconnect();
         disconnectedSubject.onComplete();
     }

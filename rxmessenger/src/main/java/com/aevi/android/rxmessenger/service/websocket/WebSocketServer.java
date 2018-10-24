@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ThreadLocalRandom;
 
+import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoWSD;
 import io.reactivex.CompletableObserver;
 import io.reactivex.Observable;
@@ -29,6 +30,8 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
 
 import static android.content.Context.WIFI_SERVICE;
+import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_FILENAME;
+import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_PASS;
 
 /**
  * Internal class used to create a websocket server that channels can use to send/receive messages
@@ -49,6 +52,11 @@ public class WebSocketServer extends NanoWSD {
         super(hostname, port);
         this.hostname = hostname;
         this.port = port;
+        try {
+            makeSecure(NanoHTTPD.makeSSLSocketFactory(KEYSTORE_FILENAME, KEYSTORE_PASS), null);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to make secure ws server", e);
+        }
     }
 
     public int getPort() {
