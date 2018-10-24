@@ -101,7 +101,7 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
     }
 
     /**
-     * Connect to the remote service using a new unique client id.
+     * Connect to the remote service.
      * <p>
      * The connection will then be kept open until the remote end closes it or {@link #closeConnection()} is called on this instance.
      * </p>

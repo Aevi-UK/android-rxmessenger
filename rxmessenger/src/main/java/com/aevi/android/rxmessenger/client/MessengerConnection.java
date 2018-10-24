@@ -72,6 +72,11 @@ class MessengerConnection implements ServiceConnection {
         }
         bound = false;
         bindSubject.onComplete();
+
+        Subject<String> callbackEmitter = incomingHandler.getCallbackEmitter();
+        if (callbackEmitter != null) {
+            callbackEmitter.onComplete();
+        }
     }
 
     String getClientId() {
@@ -109,4 +114,5 @@ class MessengerConnection implements ServiceConnection {
             bindSubject.onError(e);
         }
     }
+
 }

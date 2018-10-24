@@ -47,6 +47,9 @@ public interface ChannelClient {
      * The stream returned will only return messages from the point of subscription.
      * <p>
      * NOTE: The messages are only sent once a client is subscribed to the Observable.
+     * <p>
+     * NOTE: If the server end of this channel disconnects then a {@link java.util.NoSuchElementException} will be passed to the observable `onError`
+     * method
      *
      * @param requestData The data to send (usually a serialised JSON object)
      * @return An Observable stream of Strings containing data that the service sends back to this client
