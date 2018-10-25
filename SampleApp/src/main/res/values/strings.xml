@@ -11,7 +11,9 @@
     <string name="connected_to_service_no_stream">Connected to SampleService (Stream closed)</string>
     <string name="failed_to_connect">Failed to connect: %s</string>
     <string name="finish">Finish</string>
+    <string name="finish_client">Finish Client</string>
     <string name="received_message">Received message from SampleService: %s</string>
+    <string name="send_end">Send End Stream from server</string>
     <string name="disconnect">Disconnect</string>
     <string name="received_response">Received response from remote service: %s</string>
 </resources>

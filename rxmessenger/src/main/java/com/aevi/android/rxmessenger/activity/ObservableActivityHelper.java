@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.aevi.android.rxmessenger.MessageException;
+import com.aevi.android.rxmessenger.service.AbstractChannelService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -132,7 +133,7 @@ public class ObservableActivityHelper<T> {
      * the support library in the destination apps, this dependency is compile time only (aka provided) in this project.
      * See https://developer.android.com/topic/libraries/architecture/adding-components.html for details
      *
-     * These events may come from the remote client of the {@link com.aevi.android.rxmessenger.service.AbstractMessengerService}, or locally
+     * These events may come from the remote client of the {@link AbstractChannelService}, or locally
      * in reaction to the lifecycle events of your activity or fragment.
      *
      * It is up to the system/framework that makes use of this library to define what events might be sent.
@@ -162,7 +163,7 @@ public class ObservableActivityHelper<T> {
     }
 
     /**
-     * This can be called by the {@link com.aevi.android.rxmessenger.service.AbstractMessengerService} subclass to listen to activity lifecycle
+     * This can be called by the {@link AbstractChannelService} subclass to listen to activity lifecycle
      * events, provided that the activity/fragment called {@link #registerForEvents(Lifecycle)}.
      *
      * @return A stream of lifecycle events

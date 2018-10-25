@@ -3,14 +3,18 @@ ext {
     archLifecycleVersion = '1.0.3'
     archLifecycleJava8Version = '1.1.0'
 
-    okioVersion = '1.13.0'
+    okioVersion = '1.16.0'
+    okHttpVersion = '3.11.0'
     gsonVersion = '2.8.0'
-    rxJavaVersion = '2.1.0'
+    rxJavaVersion = '2.2.2'
+    rxAndroidVersion = '2.1.0'
     archLifecycleVersion = '1.0.3'
     archLifecycleJava8Version = '1.1.0'
 
     supportLibrary = '27.0.2'
     butterKnifeVersion = '8.8.1'
+
+    nanoHttpdVersion = '2.3.1'
 
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
@@ -31,8 +35,12 @@ ext {
     domainDependencies = [
             androidMockable   : "com.google:android-mockable-default-values:$androidMockableVersion",
             okio              : "com.squareup.okio:okio:$okioVersion",
+            okHttp            : "com.squareup.okhttp3:okhttp:$okHttpVersion",
             rxJava            : "io.reactivex.rxjava2:rxjava:$rxJavaVersion",
+            rxAndroid         : "io.reactivex.rxjava2:rxandroid:$rxAndroidVersion",
             gson              : "com.google.code.gson:gson:$gsonVersion",
+            nanoHttpd         : "org.nanohttpd:nanohttpd:$nanoHttpdVersion",
+            nanoWebsockets    : "org.nanohttpd:nanohttpd-websocket:$nanoHttpdVersion",
             archLifecycle     : "android.arch.lifecycle:runtime:$archLifecycleVersion",
             archLifecycleJava8: "android.arch.lifecycle:common-java8:$archLifecycleJava8Version"
     ]

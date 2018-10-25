@@ -16,42 +16,52 @@ package com.aevi.android.rxmessenger.client;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.aevi.android.rxmessenger.service.AbstractMessengerService;
+import com.aevi.android.rxmessenger.ChannelClient;
+import com.aevi.android.rxmessenger.service.AbstractChannelService;
 
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
-import io.reactivex.*;
+import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
+import io.reactivex.CompletableOnSubscribe;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
+import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_MESSENGER;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
+
 /**
- * Client that sends requests to an {@link AbstractMessengerService} and returns an Observable stream of response data from that service.
- *
+ * Client that sends requests to an {@link AbstractChannelService} and returns an Observable stream of response data from that service.
+ * <p>
  * The connection to the service is created via {@link #connect()} or on the first call to {@link #sendMessage(String)}
  * and kept open until {@link #closeConnection()} is called (or the service dies/crashes/etc).
- *
+ * </p>
+ * <p>
  * The way a client is identified is based on a client id that is generated for each connection. Once a connection has been created, all messages
  * on the service end will appear to be from the same client, until it is closed. One re-opened, a new client id will be used.
+ * </p>
  */
-public class ObservableMessengerClient {
+public class ObservableMessengerClient extends BaseChannelClient implements ChannelClient {
 
     private static final String TAG = ObservableMessengerClient.class.getSimpleName();
 
-    private final Context context;
-    private final ComponentName serviceComponentName;
     private final OnHandleMessageCallback onHandleMessageCallback;
-    private PublishSubject<String> responseEmitter;
+    PublishSubject<String> responseEmitter;
     private MessengerConnection messengerConnection;
 
     /**
      * Create an instance with default message handling.
      *
      * @param context              The context to use for binding to the service
-     * @param serviceComponentName The component name of the {@link AbstractMessengerService} to bind to
+     * @param serviceComponentName The component name of the {@link AbstractChannelService} to bind to
      */
     public ObservableMessengerClient(Context context, ComponentName serviceComponentName) {
         this(context, serviceComponentName, null);
@@ -61,13 +71,12 @@ public class ObservableMessengerClient {
      * Create an instance with custom message handling.
      *
      * @param context                 The context to use for binding to the service
-     * @param serviceComponentName    The component name of the {@link AbstractMessengerService} to bind to
+     * @param serviceComponentName    The component name of the {@link AbstractChannelService} to bind to
      * @param onHandleMessageCallback The callback to handle the message received
      */
     public ObservableMessengerClient(Context context, ComponentName serviceComponentName, OnHandleMessageCallback onHandleMessageCallback) {
+        super(context, serviceComponentName);
         Log.d(TAG, "Creating client for service: " + serviceComponentName.flattenToShortString());
-        this.context = context;
-        this.serviceComponentName = serviceComponentName;
         this.onHandleMessageCallback = onHandleMessageCallback;
     }
 
@@ -92,16 +101,16 @@ public class ObservableMessengerClient {
     }
 
     /**
-     * Connect to the remote service using a new unique client id.
-     *
+     * Connect to the remote service.
+     * <p>
      * The connection will then be kept open until the remote end closes it or {@link #closeConnection()} is called on this instance.
-     *
+     * </p>
      * Note that {@link #sendMessage(String)} will automatically connect if required to send a message.
      *
      * @return Completable that will complete on success and error on failure
      */
     public Completable connect() {
-        if (isConnected()) {
+        if (messengerConnection != null && messengerConnection.isBound()) {
             return Completable.complete();
         }
         return Completable.create(new CompletableOnSubscribe() {
@@ -124,13 +133,14 @@ public class ObservableMessengerClient {
     }
 
     /**
-     * Used to send a message to an {@link AbstractMessengerService} implementation and observe the responses from it.
-     *
+     * Used to send a message to an {@link AbstractChannelService} implementation and observe the responses from it.
+     * <p>
      * This will connect to the service if not already connected when called.
-     *
+     * </p>
      * The stream returned will only return messages from the point of subscription.
-     *
+     * <p>
      * NOTE: The messages are only sent once a client is subscribed to the Observable.
+     * </p>
      *
      * @param requestData The data to send (usually a serialised JSON object)
      * @return An Observable stream of Strings containing data that the service sends back to this client
@@ -169,9 +179,9 @@ public class ObservableMessengerClient {
 
     /**
      * Close the connection to the service.
-     *
+     * <p>
      * This will complete the response stream returned from {@link #sendMessage(String)}.
-     *
+     * </p>
      * Calling {@link #sendMessage(String)} after this point will create a new connection.
      */
     public void closeConnection() {
@@ -183,19 +193,34 @@ public class ObservableMessengerClient {
                 // Ignore
             }
             messengerConnection = null;
-            responseEmitter.onComplete();
-            responseEmitter = null;
+
+            if (responseEmitter != null) {
+                responseEmitter.onComplete();
+                responseEmitter = null;
+            }
         }
     }
 
     private Observable<MessengerConnection> bindToService() {
         responseEmitter = PublishSubject.create();
         IncomingHandler incomingHandler = new IncomingHandler(this, responseEmitter);
-        Intent serviceIntent = new Intent();
-        serviceIntent.setComponent(serviceComponentName);
-        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler);
+        String clientId = UUID.randomUUID().toString();
+        Intent serviceIntent = getServiceIntent(clientId);
+        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler, clientId, getChannelType());
         context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
         return messengerConnection.getConnectedObservable();
+    }
+
+    protected String getChannelType() {
+        return CHANNEL_MESSENGER;
+    }
+
+    @NonNull
+    protected Intent getServiceIntent(String clientId) {
+        Intent serviceIntent = new Intent();
+        serviceIntent.setComponent(serviceComponentName);
+        serviceIntent.putExtra(KEY_CLIENT_ID, clientId);
+        return serviceIntent;
     }
 
     public interface OnHandleMessageCallback {

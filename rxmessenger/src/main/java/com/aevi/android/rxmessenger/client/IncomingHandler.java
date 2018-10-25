@@ -41,6 +41,10 @@ class IncomingHandler extends Handler {
         this.callbackEmitter = callbackEmitter;
     }
 
+    public Subject<String> getCallbackEmitter() {
+        return callbackEmitter;
+    }
+
     @Override
     public void handleMessage(Message msg) {
         ObservableMessengerClient client = serviceRef.get();
