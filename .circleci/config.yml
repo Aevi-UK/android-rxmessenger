@@ -47,7 +47,7 @@ reusable-steps:
   - &publish_to_qa
     run:
       name: Publish to QA
-      command: ./gradlew build
+      command: ./gradlew build publishApiJarPublicationToQaRepository
   - &publish_to_snapshot
     run:
       name: Publish to Snapshot
