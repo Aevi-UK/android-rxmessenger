@@ -24,7 +24,7 @@ dependencies {
     implementation domainDependencies.nanoHttpd
     implementation domainDependencies.nanoWebsockets
 
-    implementation domainDependencies.androidMockable
+    compileOnly domainDependencies.androidMockable
     implementation domainDependencies.archLifecycle
     implementation domainDependencies.archLifecycleJava8
 
