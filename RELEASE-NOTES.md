@@ -1,5 +1,12 @@
 ## Release Notes for the AEVI Android rx messenger API
 
+## Version 4.0.0
+
+* Refactored communication channel mechanism to allow different channels to be used for the underlying communication
+* New ChannelClient and ChannelServer interfaces should now be used instead of direct use of ObservableMessengerClient
+* Services should now extend `AbstractChannelService`
+* Added websocket communication channel can be started using `Channels.websocket()` method from `Channels` factory class
+
 ## Version 3.0.0
 
 * Refactoring of rxmessenger to allow persistent connections and ensure the same client id for multiple messages
