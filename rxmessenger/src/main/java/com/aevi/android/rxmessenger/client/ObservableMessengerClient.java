@@ -25,18 +25,13 @@ import com.aevi.android.rxmessenger.service.AbstractChannelService;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
-import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
-import io.reactivex.CompletableOnSubscribe;
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
+import io.reactivex.*;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
-import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_MESSENGER;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 
 /**
  * Client that sends requests to an {@link AbstractChannelService} and returns an Observable stream of response data from that service.
@@ -206,9 +201,13 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
         IncomingHandler incomingHandler = new IncomingHandler(this, responseEmitter);
         String clientId = UUID.randomUUID().toString();
         Intent serviceIntent = getServiceIntent(clientId);
-        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler, clientId, getChannelType());
-        context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
-        return messengerConnection.getConnectedObservable();
+        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler, clientId, getChannelType(), context.getPackageName());
+        boolean canBind = context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
+        if (canBind) {
+            return messengerConnection.getConnectedObservable();
+        } else {
+            return Observable.error(new NoSuchServiceException(String.format("RxMessenger service %s not found", serviceComponentName)));
+        }
     }
 
     protected String getChannelType() {
@@ -220,6 +219,7 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
         Intent serviceIntent = new Intent();
         serviceIntent.setComponent(serviceComponentName);
         serviceIntent.putExtra(KEY_CLIENT_ID, clientId);
+        serviceIntent.putExtra(KEY_DATA_SENDER, context.getPackageName());
         return serviceIntent;
     }
 

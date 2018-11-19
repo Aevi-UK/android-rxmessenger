@@ -52,6 +52,7 @@ public class WebSocketChannelServerTest {
     private WebSocketChannelServer webSocketChannelServer;
 
     private String COMPONENT_NAME = "com.rxmessenger/.IsKingAndQueen";
+    private String CLIENT_PACKAGE_NAME = "com.rxmessenger.clients.rock";
 
     @Mock
     Context context;
@@ -78,7 +79,7 @@ public class WebSocketChannelServerTest {
     @Before
     public void setup() {
         initMocks(this);
-        webSocketChannelServer = new TestWebSocketChannelServer(context, COMPONENT_NAME);
+        webSocketChannelServer = new TestWebSocketChannelServer(context, COMPONENT_NAME, CLIENT_PACKAGE_NAME);
 
         when(context.getApplicationContext()).thenReturn(context);
         when(context.getSystemService(WIFI_SERVICE)).thenReturn(wifiManager);
@@ -259,8 +260,8 @@ public class WebSocketChannelServerTest {
 
     class TestWebSocketChannelServer extends WebSocketChannelServer {
 
-        TestWebSocketChannelServer(Context context, String serviceComponentName) {
-            super(context, serviceComponentName);
+        TestWebSocketChannelServer(Context context, String serviceComponentName, String clientPackageName) {
+            super(context, serviceComponentName, clientPackageName);
         }
 
         @Override

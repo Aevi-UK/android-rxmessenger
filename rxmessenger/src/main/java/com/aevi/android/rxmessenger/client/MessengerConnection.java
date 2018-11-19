@@ -44,11 +44,13 @@ class MessengerConnection implements ServiceConnection {
     private Messenger outgoingMessenger;
     private ComponentName componentName;
     private boolean bound = false;
+    private String clientPackageName;
 
-    MessengerConnection(IncomingHandler incomingHandler, String clientId, String channelType) {
+    MessengerConnection(IncomingHandler incomingHandler, String clientId, String channelType, String clientPackageName) {
         this.incomingHandler = incomingHandler;
         this.clientId = clientId;
         this.channelType = channelType;
+        this.clientPackageName = clientPackageName;
         Log.d(TAG, "Created connection with id: " + clientId);
     }
 
@@ -98,7 +100,7 @@ class MessengerConnection implements ServiceConnection {
             Bundle data = new Bundle();
             data.putString(KEY_CLIENT_ID, clientId);
             data.putString(KEY_DATA_REQUEST, requestData);
-            data.putString(KEY_DATA_SENDER, componentName.flattenToString());
+            data.putString(KEY_DATA_SENDER, clientPackageName);
             data.putString(KEY_CHANNEL_TYPE, channelType);
             msg.setData(data);
             msg.replyTo = new Messenger(incomingHandler);

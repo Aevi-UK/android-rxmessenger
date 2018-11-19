@@ -88,7 +88,7 @@ public class AbstractChannelServiceTest {
 
         @NonNull
         @Override
-        protected ChannelServer getChannelServer(String clientId, String channelType) {
+        protected ChannelServer getChannelServer(String clientId, String channelType, String clientPackageName) {
             this.channelType = channelType;
             return fakeHandler;
         }
@@ -99,10 +99,6 @@ public class AbstractChannelServiceTest {
             this.packageName = callingPackageName;
         }
 
-        @Override
-        public String getCallingPackage() {
-            return "com.test.call.me.baby";
-        }
     }
 
     @NonNull

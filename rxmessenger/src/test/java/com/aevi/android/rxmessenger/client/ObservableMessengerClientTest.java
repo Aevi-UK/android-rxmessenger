@@ -17,12 +17,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.*;
 
 import com.aevi.android.rxmessenger.MessageException;
 import com.aevi.android.rxmessenger.MockShadowMessenger;
@@ -45,18 +40,12 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_END_STREAM;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_RESPONSE;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@Config(sdk = Build.VERSION_CODES.LOLLIPOP, manifest = Config.NONE, shadows = {MockShadowMessenger.class})
+@Config(manifest = Config.NONE, shadows = {MockShadowMessenger.class})
 @RunWith(RobolectricTestRunner.class)
 public class ObservableMessengerClientTest {
 
@@ -77,9 +66,11 @@ public class ObservableMessengerClientTest {
 
     @Test
     public void checkWillHandleNoServiceWithError() throws RemoteException {
+        setupServiceUnbindable();
+
         TestObserver<String> obs = createObservableSendDataAndSubscribe(new DataObject());
 
-        obs.assertError(RuntimeException.class);
+        obs.assertError(NoSuchServiceException.class);
     }
 
     @Test
@@ -293,6 +284,12 @@ public class ObservableMessengerClientTest {
     private void verifyServiceIsBound() {
         ShadowApplication shadowApplication = ShadowApplication.getInstance();
         assertThat(shadowApplication.getBoundServiceConnections()).hasSize(1);
+    }
+
+    private void setupServiceUnbindable() {
+        Intent intent = new Intent();
+        intent.setComponent(SERVICE_COMPONENT_NAME);
+        ShadowApplication.getInstance().declareActionUnbindable(intent.getAction());
     }
 
     private void setupMockBoundMessengerService() {

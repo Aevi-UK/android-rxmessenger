@@ -59,8 +59,8 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
     private boolean disconnectedWithEndStreamCall = false;
 
-    WebSocketChannelServer(Context context, String serviceComponentName) {
-        super(serviceComponentName);
+    WebSocketChannelServer(Context context, String serviceComponentName, String clientPackageName) {
+        super(serviceComponentName, clientPackageName);
         this.context = context;
     }
 

@@ -22,12 +22,7 @@ import android.util.Log;
 import com.aevi.android.rxmessenger.ChannelServer;
 import com.aevi.android.rxmessenger.MessageException;
 
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_SENDER;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_END_STREAM;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_RESPONSE;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 
 /**
  * An Android {@link Messenger} implementation of an {@link ChannelServer}
@@ -39,9 +34,11 @@ public class MessengerChannelServer extends BaseChannelServer {
     protected Messenger replyTo;
 
     private final String serviceComponentName;
+    private final String clientPackageName;
 
-    MessengerChannelServer(String serviceComponentName) {
+    MessengerChannelServer(String serviceComponentName, String clientPackageName) {
         this.serviceComponentName = serviceComponentName;
+        this.clientPackageName = clientPackageName;
     }
 
     @Override
@@ -79,6 +76,11 @@ public class MessengerChannelServer extends BaseChannelServer {
         b.putString(KEY_DATA_RESPONSE, error.toJson());
         Message message = createMessage(b, MESSAGE_ERROR);
         return send(message);
+    }
+
+    @Override
+    public String getClientPackageName() {
+        return clientPackageName;
     }
 
     @Override

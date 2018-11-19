@@ -33,7 +33,11 @@ dependencies {
     testCompile testDependencies.mockito
     testCompile testDependencies.assertJ
     testCompile testDependencies.robolectric
-    testCompile testDependencies.robolectricannotations
+    testCompile testDependencies.hamcrest
+
+    // FIXME - Latest version of Android Studio seems to require these to run this projects unit tests but they are not required for gradle externally!?
+    testCompile "org.ow2.asm:asm:6.2.1"
+    testCompile "org.ow2.asm:asm-commons:6.2.1"
 }
 
 javadoc {

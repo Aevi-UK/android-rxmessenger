@@ -1,2 +1,2 @@
-include ':rxmessenger', ':SampleApp'
+include ':rxmessenger', ':SampleClientApp', ':SampleServerApp', ':samplecommonlib'
 

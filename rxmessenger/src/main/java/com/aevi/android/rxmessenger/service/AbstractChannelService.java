@@ -16,13 +16,7 @@ package com.aevi.android.rxmessenger.service;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.os.Binder;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.*;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -34,16 +28,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_MESSENGER;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 
 /**
  * Base class for an Android service that can be used receive client requests and send back responses and errors over various channels.
  * <p>
  * As with all Android {@link Service} classes this class will keep running until {@link #stopSelf()} is called. It is the responsibility of
- * implementations of this class to ensure the stop method is called at the correct time. Alternatively the  {@link #setStopSelfOnEndOfStream(boolean)}
+ * implementations of this class to ensure the stop method is called at the correct time. Alternatively the
+ * {@link #setStopSelfOnEndOfStream(boolean)}
  * method can be used to set a flag which will automatically stop this service once all {@link com.aevi.android.rxmessenger.ChannelClient} instances
  * have unbound from this service.
  * </p>
@@ -81,9 +73,10 @@ public abstract class AbstractChannelService extends Service {
                     Bundle data = msg.getData();
                     String msgClientId = data.getString(KEY_CLIENT_ID, UUID.randomUUID().toString());
                     String channelType = data.getString(KEY_CHANNEL_TYPE, CHANNEL_MESSENGER);
+                    String clientPackageName = data.getString(KEY_DATA_SENDER, "");
                     AbstractChannelService service = serviceRef.get();
                     if (service != null) {
-                        ChannelServer channelServer = service.getChannelServer(msgClientId, channelType);
+                        ChannelServer channelServer = service.getChannelServer(msgClientId, channelType, clientPackageName);
                         channelServer.handleMessage(msg);
                     }
                     break;
@@ -98,17 +91,19 @@ public abstract class AbstractChannelService extends Service {
     public final IBinder onBind(Intent intent) {
         String clientId = getClientIdFromIntent(intent);
         String channelType = getChannelTypeFromIntent(intent);
+        String clientPackageName = getClientPackageNameFromIntent(intent);
+
         Log.d(TAG, String.format("Bound to client %s channel type: %s", clientId, channelType));
-        return createServiceIncomingHandler(clientId, channelType);
+        return createServiceIncomingHandler(clientId, channelType, clientPackageName);
     }
 
     @NonNull
-    public IBinder createServiceIncomingHandler(String clientId, String channelType) {
+    public IBinder createServiceIncomingHandler(String clientId, String channelType, String clientPackageName) {
         synchronized (channelServerMap) {
             // Other handlers can be selected here if/when they are implemented
             serviceName = getServiceName();
 
-            ChannelServer channelServer = getChannelServer(clientId, channelType);
+            ChannelServer channelServer = getChannelServer(clientId, channelType, clientPackageName);
             incomingHandler = new IncomingHandler(this);
             Messenger incomingMessenger = getMessenger();
             monitorForDeath(incomingMessenger, channelServer);
@@ -153,23 +148,21 @@ public abstract class AbstractChannelService extends Service {
      * <p>
      * Can be overridden in services if a custom channel server is required
      *
-     * @param channelType The channel type to support
+     * @param channelType       The channel type to support
+     * @param clientId          The id of the client
+     * @param clientPackageName The package name of the calling client
      * @return A {@link ChannelServer} implementation
      */
     @NonNull
-    protected ChannelServer getChannelServer(String clientId, String channelType) {
+    protected ChannelServer getChannelServer(String clientId, String channelType, String clientPackageName) {
         if (channelServerMap.containsKey(clientId)) {
             return channelServerMap.get(clientId);
         } else {
-            ChannelServer channelServer = ChannelServerFactory.getChannelServer(getBaseContext(), channelType, serviceName);
+            ChannelServer channelServer = ChannelServerFactory.getChannelServer(getBaseContext(), channelType, serviceName, clientPackageName);
             channelServerMap.put(clientId, channelServer);
-            onNewClient(channelServer, getCallingPackage());
+            onNewClient(channelServer, clientPackageName);
             return channelServer;
         }
-    }
-
-    protected String getCallingPackage() {
-        return getBaseContext().getPackageManager().getNameForUid(Binder.getCallingUid());
     }
 
     /**
@@ -218,7 +211,7 @@ public abstract class AbstractChannelService extends Service {
             return intent.getStringExtra(KEY_CLIENT_ID);
         }
         // fallback to use package name, Uid and Pid from bound Intent if no client id sent
-        return getCallingPackage() + ":" + Binder.getCallingUid() + ":" + Binder.getCallingPid();
+        return getClientPackageNameFromIntent(intent) + ":" + Binder.getCallingUid() + ":" + Binder.getCallingPid();
     }
 
     @NonNull
@@ -227,6 +220,14 @@ public abstract class AbstractChannelService extends Service {
             return intent.getStringExtra(KEY_CHANNEL_TYPE);
         }
         return CHANNEL_MESSENGER;
+    }
+
+    @NonNull
+    private String getClientPackageNameFromIntent(Intent intent) {
+        if (intent.hasExtra(KEY_DATA_SENDER)) {
+            return intent.getStringExtra(KEY_DATA_SENDER);
+        }
+        return "";
     }
 
     private ChannelServer getTargetForClientId(String clientId) {

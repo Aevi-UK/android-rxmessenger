@@ -13,6 +13,8 @@
  */
 package com.aevi.android.rxmessenger;
 
+import com.aevi.android.rxmessenger.client.NoSuchServiceException;
+
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 
@@ -53,6 +55,7 @@ public interface ChannelClient {
      *
      * @param requestData The data to send (usually a serialised JSON object)
      * @return An Observable stream of Strings containing data that the service sends back to this client
+     * @throws NoSuchServiceException Thrown if client cannot find the corresponding service to connect to
      */
     Observable<String> sendMessage(final String requestData);
 

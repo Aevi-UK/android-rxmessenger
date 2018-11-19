@@ -24,6 +24,13 @@ import io.reactivex.Observable;
 public interface ChannelServer extends IBinder.DeathRecipient {
 
     /**
+     * Returns the package name of the client that is requesting to connect to this server
+     *
+     * @return The client package name
+     */
+    String getClientPackageName();
+
+    /**
      * Send a message to the client
      *
      * @param message The message to send
