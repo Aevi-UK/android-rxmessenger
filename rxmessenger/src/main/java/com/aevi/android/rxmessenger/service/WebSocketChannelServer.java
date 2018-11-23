@@ -26,8 +26,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.CompletableObserver;
+import io.reactivex.Observable;
 import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
@@ -47,7 +49,10 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
     private static final String TAG = WebSocketChannelServer.class.getSimpleName();
 
+    private static final int WAIT_FOR_CLOSE_TIMEOUT = 1;
+
     public static final String CONNECT_PLEASE = "connect";
+    public static final String CLOSE_MESSAGE = "closeMessage";
 
     private WebSocketServer webSocketServer;
     private WebSocketConnection webSocketConnection;
@@ -115,27 +120,30 @@ public class WebSocketChannelServer extends MessengerChannelServer {
             sendMessageQueue = PublishSubject.create();
         }
 
-        sendMessageQueue.observeOn(getSendScheduler()).doOnComplete(new Action() {
-            @Override
-            public void run() throws Exception {
-                finishAndCleanUp();
-            }
-        }).subscribe(new Consumer<String>() {
-            @Override
-            public void accept(String message) throws Exception {
-                try {
-                    if (webSocketConnection != null && webSocketConnection.isConnected()) {
-                        webSocketConnection.send(message);
+        sendMessageQueue.observeOn(getSendScheduler())
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        finishAndCleanUp();
                     }
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to send message via websocket", e);
-                }
-            }
-        });
+                })
+                .subscribe(new Consumer<String>() {
+                    @Override
+                    public void accept(String message) throws Exception {
+                        try {
+                            if (webSocketConnection != null && webSocketConnection.isConnected()) {
+                                webSocketConnection.send(message);
+                            }
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to send message via websocket", e);
+                        }
+                    }
+                });
     }
 
     private void finishAndCleanUp() {
         if (webSocketConnection != null) {
+
             webSocketConnection.disconnect();
         }
     }
@@ -217,8 +225,17 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
     @Override
     public boolean sendEndStream() {
-        sendMessageQueue.onComplete();
         disconnectedWithEndStreamCall = true;
+        sendMessageQueue.onNext(CLOSE_MESSAGE);
+        Observable.timer(WAIT_FOR_CLOSE_TIMEOUT, TimeUnit.SECONDS, getSendScheduler())
+                .subscribe(new Consumer<Long>() {
+                    @Override
+                    public void accept(Long aLong) throws Exception {
+                        if (!sendMessageQueue.hasComplete()) {
+                            sendMessageQueue.onComplete();
+                        }
+                    }
+                });
         return true;
     }
 }

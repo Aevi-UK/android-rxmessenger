@@ -23,6 +23,8 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
+import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CLOSE_MESSAGE;
+
 /**
  * For internal use only
  */
@@ -31,10 +33,12 @@ public class OkWebSocketListener extends WebSocketListener {
     private static final String TAG = OkWebSocketListener.class.getSimpleName();
 
     private final CompletableEmitter emitter;
+    private final OkWebSocketClient okWebSocketClient;
     private PublishSubject<String> responseEmitter;
 
-    OkWebSocketListener(CompletableEmitter emitter) {
+    OkWebSocketListener(OkWebSocketClient okWebSocketClient, CompletableEmitter emitter) {
         this.emitter = emitter;
+        this.okWebSocketClient = okWebSocketClient;
     }
 
     @Override
@@ -50,10 +54,15 @@ public class OkWebSocketListener extends WebSocketListener {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
-                    if (responseEmitter != null) {
-                        responseEmitter.onNext(text);
+                    if (CLOSE_MESSAGE.equals(text)) {
+                        responseEmitter.onComplete();
+                        okWebSocketClient.close();
                     } else {
-                        Log.d(TAG, "Receieved message but no response emitter to pass it to");
+                        if (responseEmitter != null) {
+                            responseEmitter.onNext(text);
+                        } else {
+                            Log.d(TAG, "Receieved message but no response emitter to pass it to");
+                        }
                     }
                 }
             });
