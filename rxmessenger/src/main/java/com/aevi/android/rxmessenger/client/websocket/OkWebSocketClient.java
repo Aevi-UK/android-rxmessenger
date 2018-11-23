@@ -71,7 +71,7 @@ public class OkWebSocketClient {
                         .hostnameVerifier(getOpenVerifier())
                         .build();
                 Request request = new Request.Builder().url("wss://" + hostAddress + ":" + port).build();
-                listener = new OkWebSocketListener(emitter);
+                listener = new OkWebSocketListener(OkWebSocketClient.this, emitter);
                 webSocket = client.newWebSocket(request, listener);
             }
         });

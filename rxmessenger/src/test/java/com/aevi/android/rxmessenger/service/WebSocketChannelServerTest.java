@@ -31,19 +31,10 @@ import io.reactivex.subjects.CompletableSubject;
 import io.reactivex.subjects.PublishSubject;
 
 import static android.content.Context.WIFI_SERVICE;
-import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_WEBSOCKET;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_SENDER;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNECT_PLEASE;
 import static org.assertj.core.api.Java6Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(RobolectricTestRunner.class)
@@ -73,6 +64,7 @@ public class WebSocketChannelServerTest {
     Messenger replyToMessenger;
 
     private Scheduler testScheduler = Schedulers.trampoline();
+
     private PublishSubject<String> messageStream = PublishSubject.create();
     private CompletableSubject disconnectCompletable = CompletableSubject.create();
 
