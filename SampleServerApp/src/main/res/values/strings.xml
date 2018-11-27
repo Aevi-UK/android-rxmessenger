@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">RxMessenger Server Sample</string>
+    <string name="sample_activity">Sample Activity</string>
+    <string name="here_be_response">Here be response</string>
+    <string name="send_response">Send response</string>
+    <string name="finish">Finish</string>
+    <string name="received_message">Received message from SampleService: %s</string>
+    <string name="send_end">Send End Stream from server</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="received_response">Received response from remote service: %s</string>
+</resources>

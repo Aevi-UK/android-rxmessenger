@@ -24,4 +24,8 @@ public interface MessageConstants {
     String KEY_DATA_REQUEST = "dataRequest";
     String KEY_DATA_RESPONSE = "dataResponse";
     String KEY_DATA_SENDER = "sender";
+    String KEY_CHANNEL_TYPE = "channel";
+
+    String CHANNEL_MESSENGER = "messenger";
+    String CHANNEL_WEBSOCKET = "websocket";
 }

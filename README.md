@@ -2,8 +2,11 @@
 
 A utility library that can be used on Android to create a messenger service/client application. The library
 can be used to send message to an Android Service and receive responses as a reactive stream of Observables.
+The library can use any communication channel capable of exchanging data as a string. Two implementations are
+currently provided for communication via Android Messenger and via a Websocket.
 
-These classes provide an implementation of the messenger service making use of reactive extensions (RxJava/RxAndroid).
+Both of these implementations make use of reactive extensions (RxJava/RxAndroid).
+
 All data sent between client and server are simple strings, implementations making use of this library are free
 to choose whatever serialisation mechanism they want to serialise the data (we recommend JSON).
 
@@ -32,21 +35,26 @@ would live in separate applications.
 ## Setting up the server
 
 ```java
-public class DemoMessengerService extends AbstractMessengerService {
+public class DemoMessengerService extends AbstractChannelService implements ChannelServer.ClientListener {
 
-    @Override
-    protected void handleRequest(String clientId, String requestData, String packageName) {
-        // It is important to send messages back to the correct clientId
-        // so make sure you store/keep this id somewhere
+   @Override
+   protected void onNewClient(ChannelServer channelServer, String callingPackageName) {
+
+        Toast.makeText(this, "New client connected", Toast.LENGTH_SHORT).show();
+
+        channelServer.addClientListener(this);
+        channelServer.subscribeToMessages().subscribe(message -> {
+          // Do something with the incoming message(s) here
+        });
 
         // Setup response message here and send reply to client
         ResponseObject response = new ResponseObject();
 
         // Send a message to client (can be multiple)
-        sendMessageToClient(clientId, response.toJson());
+        channelServer.send(response.toJson());
 
         // Let the client know and end the stream here
-        sendEndStreamMessageToClient(clientId);
+        channelServer.sendEndStream();
     }
 }
 ```
@@ -117,11 +125,9 @@ The `ObservableActivityHelper` will automatically finish up when the activity
 
 After that point, any call to `ObservableActivityHelper.getInstance()` will throw `NoSuchInstanceException`.
 
-**NOTE**
-
-In order to use the lifecycle events and messaging described above, the client app must add dependencies on the following components,
-- android.arch.lifecycle:runtime
-- android.arch.lifecycle:common-java8
+> NOTE: In order to use the lifecycle events and messaging described above, the client app must add dependencies on the following components,
+> - android.arch.lifecycle:runtime
+> - android.arch.lifecycle:common-java8
 
 The library defines these as compile time dependencies only to avoid forcing these transitively upon a client.
 They are only required if the above events and messaging is used.
@@ -130,30 +136,55 @@ See the sample app for further details.
 
 ## Setting up the client
 
-The client application should use the `ObservableMessengerClient` class to send a message to the
-service.
+The client applications should use the `Channels` class to obtain a channel to communicate with the server and then send a message to it.
+
+To obtain an instance usoing Android Messenger as the primary channel use:
+```java
+   ChannelClient messengerClient = Channels.messenger(this, SERVICE);
+```
+
+To obtain an instance using Websokets as the primary channel use:
+```java
+   ChannelClient messengerClient = Channels.webSocket(this, SERVICE);
+```
+
+> NOTE: Currently websocket communication is experimental and if you are using it in your application should be thoroughly tested before any release
+into production.
+
+> NOTE: If the websocket channel is chosen the initial communication will still be via Android Messenger. This is so that hostname and port
+details can be shared between client and server in order to setup the initial websocket.
+
+> NOTE: Currently websocket communication will take place over SSL however the server certificate and private key is contained in this library
+for simplicity. Future releases of this library will allow the server SSL cert and key to be passed into the `Channels` factory so that true
+secure communication can be used.
+
+If using a websocket for communication your application(s) must make use of the android permissions shown below to allow networking access.
+
+```xml
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+```
+
 
 The client is constructed with the component name of the service it should connect to. On the first call to `sendMessage()`, the client will bind to the service.
 You can also connect explicitly via a call to `connect()` and check connection status via `isConnected()`.
 The connection is then kept active until `closeConnection()` is called, or the remote service sends an end of stream command.
 
-The `clientId` passed to the service `handleRequest` method is guaranteed to remain the same for as long as the connection is open. If closed and a new connection is opened, a new id will be generated.
-
-Optionally, you can use a different constructor than below by passing in a `OnHandleMessageCallback` instance, allowing you to deal with the response before passing it on to the subscriber.
 
 ```java
 
-    private ObservableMessengerClient client;
+    private ChannelClient client;
 
     protected void setup() {
         ComponentName serviceComponentName = new ComponentName("com.server.package", "com.server.package.DemoMessengerService");
-        client = new ObservableMessengerClient(this, serviceComponentName);
+        client = Channels.messenger(this, serviceComponentName);
     }
 
     public void sendMessage() {
         RequestObject request = new RequestObject();
 
-        client.sendMessage(request.toJson())
+        client.send(request.toJson())
                 .subscribe(new Consumer<String>() {
             @Override
             public void accept(@NonNull String response) throws Exception {

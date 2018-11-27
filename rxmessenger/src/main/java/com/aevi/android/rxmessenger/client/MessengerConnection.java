@@ -15,16 +15,22 @@ package com.aevi.android.rxmessenger.client;
 
 import android.content.ComponentName;
 import android.content.ServiceConnection;
-import android.os.*;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
-
-import java.util.UUID;
 
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
-import static com.aevi.android.rxmessenger.MessageConstants.*;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_SENDER;
+import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
 
 class MessengerConnection implements ServiceConnection {
 
@@ -32,19 +38,23 @@ class MessengerConnection implements ServiceConnection {
 
     private final IncomingHandler incomingHandler;
     private final String clientId;
+    private final String channelType;
     private final BehaviorSubject<MessengerConnection> bindSubject = BehaviorSubject.create();
 
     private Messenger outgoingMessenger;
     private ComponentName componentName;
     private boolean bound = false;
+    private String clientPackageName;
 
-    MessengerConnection(IncomingHandler incomingHandler) {
+    MessengerConnection(IncomingHandler incomingHandler, String clientId, String channelType, String clientPackageName) {
         this.incomingHandler = incomingHandler;
-        this.clientId = UUID.randomUUID().toString();
+        this.clientId = clientId;
+        this.channelType = channelType;
+        this.clientPackageName = clientPackageName;
         Log.d(TAG, "Created connection with id: " + clientId);
     }
 
-    public void updateCallbackEmitter(Subject<String> callbackEmitter) {
+    void updateCallbackEmitter(Subject<String> callbackEmitter) {
         incomingHandler.updateCallbackEmitter(callbackEmitter);
     }
 
@@ -64,6 +74,11 @@ class MessengerConnection implements ServiceConnection {
         }
         bound = false;
         bindSubject.onComplete();
+
+        Subject<String> callbackEmitter = incomingHandler.getCallbackEmitter();
+        if (callbackEmitter != null) {
+            callbackEmitter.onComplete();
+        }
     }
 
     String getClientId() {
@@ -85,14 +100,21 @@ class MessengerConnection implements ServiceConnection {
             Bundle data = new Bundle();
             data.putString(KEY_CLIENT_ID, clientId);
             data.putString(KEY_DATA_REQUEST, requestData);
-            data.putString(KEY_DATA_SENDER, componentName.flattenToString());
+            data.putString(KEY_DATA_SENDER, clientPackageName);
+            data.putString(KEY_CHANNEL_TYPE, channelType);
             msg.setData(data);
             msg.replyTo = new Messenger(incomingHandler);
-            try {
-                outgoingMessenger.send(msg);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to send message", e);
-            }
+            doSend(msg);
         }
     }
+
+    private void doSend(Message msg) {
+        try {
+            outgoingMessenger.send(msg);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send message to service", e);
+            bindSubject.onError(e);
+        }
+    }
+
 }

@@ -17,19 +17,27 @@ ext.artifactId = 'rxmessenger'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile domainDependencies.gson
-    compile domainDependencies.rxJava
-    compile domainDependencies.okio
-    provided domainDependencies.androidMockable
-    provided domainDependencies.archLifecycle
-    provided domainDependencies.archLifecycleJava8
+    implementation domainDependencies.gson
+    implementation domainDependencies.rxJava
+    implementation domainDependencies.okio
+    implementation domainDependencies.okHttp
+    implementation domainDependencies.nanoHttpd
+    implementation domainDependencies.nanoWebsockets
+
+    compileOnly domainDependencies.androidMockable
+    implementation domainDependencies.archLifecycle
+    implementation domainDependencies.archLifecycleJava8
 
     testCompile domainDependencies.androidMockable
     testCompile testDependencies.junit
     testCompile testDependencies.mockito
     testCompile testDependencies.assertJ
     testCompile testDependencies.robolectric
-    testCompile testDependencies.robolectricannotations
+    testCompile testDependencies.hamcrest
+
+    // FIXME - Latest version of Android Studio seems to require these to run this projects unit tests but they are not required for gradle externally!?
+    testCompile "org.ow2.asm:asm:6.2.1"
+    testCompile "org.ow2.asm:asm-commons:6.2.1"
 }
 
 javadoc {
