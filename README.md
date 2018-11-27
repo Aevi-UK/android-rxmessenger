@@ -148,6 +148,9 @@ To obtain an instance using Websokets as the primary channel use:
    ChannelClient messengerClient = Channels.webSocket(this, SERVICE);
 ```
 
+> NOTE: Currently websocket communication is experimental and if you are using it in your application should be thoroughly tested before any release
+into production.
+
 > NOTE: If the websocket channel is chosen the initial communication will still be via Android Messenger. This is so that hostname and port
 details can be shared between client and server in order to setup the initial websocket.
 
