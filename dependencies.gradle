@@ -11,7 +11,7 @@ ext {
     archLifecycleVersion = '1.0.3'
     archLifecycleJava8Version = '1.1.0'
 
-    supportLibrary = '27.0.2'
+    supportLibrary = '28.0.0'
     butterKnifeVersion = '8.8.1'
 
     nanoHttpdVersion = '2.3.1'
@@ -20,7 +20,8 @@ ext {
     mockitoVersion = '1.10.19'
     assertJVersion = '2.7.0'
     androidMockableVersion = '26'
-    robolectricVersion = '3.3.2'
+    robolectricVersion = '3.8'
+    hamcrestVersion = '1.3'
 
     presentationDependencies = [
             butterKnife      : "com.jakewharton:butterknife:$butterKnifeVersion",
@@ -51,6 +52,7 @@ ext {
             assertJ               : "org.assertj:assertj-core:$assertJVersion",
             robolectric           : "org.robolectric:robolectric:$robolectricVersion",
             robolectricannotations: "org.robolectric:robolectric-annotations:$robolectricVersion",
+            hamcrest              : "org.hamcrest:hamcrest-all:$hamcrestVersion",
     ]
 
     annotationDependencies = [

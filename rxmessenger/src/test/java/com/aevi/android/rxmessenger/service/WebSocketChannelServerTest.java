@@ -31,19 +31,10 @@ import io.reactivex.subjects.CompletableSubject;
 import io.reactivex.subjects.PublishSubject;
 
 import static android.content.Context.WIFI_SERVICE;
-import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_WEBSOCKET;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CLIENT_ID;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_REQUEST;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_SENDER;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
-import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNECT_PLEASE;
 import static org.assertj.core.api.Java6Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(RobolectricTestRunner.class)
@@ -52,6 +43,7 @@ public class WebSocketChannelServerTest {
     private WebSocketChannelServer webSocketChannelServer;
 
     private String COMPONENT_NAME = "com.rxmessenger/.IsKingAndQueen";
+    private String CLIENT_PACKAGE_NAME = "com.rxmessenger.clients.rock";
 
     @Mock
     Context context;
@@ -72,13 +64,14 @@ public class WebSocketChannelServerTest {
     Messenger replyToMessenger;
 
     private Scheduler testScheduler = Schedulers.trampoline();
+
     private PublishSubject<String> messageStream = PublishSubject.create();
     private CompletableSubject disconnectCompletable = CompletableSubject.create();
 
     @Before
     public void setup() {
         initMocks(this);
-        webSocketChannelServer = new TestWebSocketChannelServer(context, COMPONENT_NAME);
+        webSocketChannelServer = new TestWebSocketChannelServer(context, COMPONENT_NAME, CLIENT_PACKAGE_NAME);
 
         when(context.getApplicationContext()).thenReturn(context);
         when(context.getSystemService(WIFI_SERVICE)).thenReturn(wifiManager);
@@ -259,8 +252,8 @@ public class WebSocketChannelServerTest {
 
     class TestWebSocketChannelServer extends WebSocketChannelServer {
 
-        TestWebSocketChannelServer(Context context, String serviceComponentName) {
-            super(context, serviceComponentName);
+        TestWebSocketChannelServer(Context context, String serviceComponentName, String clientPackageName) {
+            super(context, serviceComponentName, clientPackageName);
         }
 
         @Override

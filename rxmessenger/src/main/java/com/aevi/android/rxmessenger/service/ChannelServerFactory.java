@@ -25,14 +25,14 @@ final class ChannelServerFactory {
     }
 
     @NonNull
-    static ChannelServer getChannelServer(Context context, String channelType, String serviceComponentName) {
+    static ChannelServer getChannelServer(Context context, String channelType, String serviceComponentName, String clientPackageName) {
         ChannelServer channelServer;
         switch (channelType) {
             case CHANNEL_WEBSOCKET:
-                channelServer = new WebSocketChannelServer(context, serviceComponentName);
+                channelServer = new WebSocketChannelServer(context, serviceComponentName, clientPackageName);
                 break;
             default:
-                channelServer = new MessengerChannelServer(serviceComponentName);
+                channelServer = new MessengerChannelServer(serviceComponentName, clientPackageName);
                 break;
         }
         return channelServer;

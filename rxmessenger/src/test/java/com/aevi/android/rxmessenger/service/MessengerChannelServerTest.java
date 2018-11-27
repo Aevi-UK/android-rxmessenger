@@ -49,14 +49,14 @@ public class MessengerChannelServerTest {
 
     private String CLIENT_ID = "67367";
     private String COMPONENT_NAME = "com.rxmessenger/.IsKing";
-
+    private String CLIENT_PACKAGE_NAME = "com.rxmessenger.clients.rock";
 
     @Before
     public void setup() {
         initMocks(this);
         when(messenger.getBinder()).thenReturn(binder);
 
-        messengerChannelServer = new MessengerChannelServer(COMPONENT_NAME);
+        messengerChannelServer = new MessengerChannelServer(COMPONENT_NAME, CLIENT_PACKAGE_NAME);
     }
 
     @Test
