@@ -35,10 +35,12 @@ import io.reactivex.subjects.PublishSubject;
 /**
  * Helper class that allows for a request/response style communication between some class and an Android Activity.
  *
- * A class that wants to start an activity to interact with a user and generate some form of response, can create a new instance with {@link #createInstance(Context, Intent)} followed by a call to {@link #startObservableActivity()} in order to
+ * A class that wants to start an activity to interact with a user and generate some form of response, can create a new instance with
+ * {@link #createInstance(Context, Intent)} followed by a call to {@link #startObservableActivity()} in order to
  * retrieve an Observable to subscribe to.
  *
- * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and call {@link #publishResponse(Object)} to pass back a response.
+ * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and
+ * call {@link #publishResponse(Object)} to pass back a response.
  *
  * The activity should also call {@link #registerForEvents(Lifecycle)} to allow the service or client to send relevant events to it.
  */
@@ -187,13 +189,24 @@ public class ObservableActivityHelper<T> {
     }
 
     /**
-     * Publish a response back to the calling class.
+     * Publish a response back to the calling class and end the stream.
      *
      * @param response The response
+     * @deprecated Please use {@link #sendMessageToClient(Object)} and/or {@link #completeStream()} individually for clarity
      */
+    @Deprecated
     public void publishResponse(T response) {
-        Log.d(TAG, "publishResponse");
-        emitter.onNext(response);
+        sendMessageToClient(response);
+        completeStream();
+    }
+
+    public void sendMessageToClient(T message) {
+        Log.d(TAG, "sendMessageToClient");
+        emitter.onNext(message);
+    }
+
+    public void completeStream() {
+        Log.d(TAG, "completeStream");
         emitter.onComplete();
         removeFromMap();
     }
