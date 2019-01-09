@@ -51,7 +51,7 @@ reusable-steps:
   - &publish_to_snapshot
     run:
       name: Publish to Snapshot
-      command: ./gradlew build
+      command: ./gradlew build publishApiJarPublicationToSnapshotRepository
   - &publish_to_release
     run:
       name: Publish to Release
