@@ -12,6 +12,7 @@ import com.aevi.android.rxmessenger.activity.ObservableActivityHelper;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.disposables.Disposable;
 
 public class SampleActivity extends AppCompatActivity {
 
@@ -24,6 +25,7 @@ public class SampleActivity extends AppCompatActivity {
     TextView messageText;
 
     private ObservableActivityHelper<String> activityHelper;
+    private Disposable eventDisposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +38,8 @@ public class SampleActivity extends AppCompatActivity {
     private void registerWithHelper() {
         try {
             activityHelper = ObservableActivityHelper.getInstance(getIntent());
-            activityHelper.registerForEvents(getLifecycle()).subscribe(eventFromService -> {
+            activityHelper.setLifecycle(getLifecycle());
+            eventDisposable = activityHelper.registerForEvents().subscribe(eventFromService -> {
                 Log.d(TAG, "Received event from service: " + eventFromService);
                 messageText.setText(getString(R.string.received_message, eventFromService));
             });
@@ -47,14 +50,23 @@ public class SampleActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (eventDisposable != null) {
+            eventDisposable.dispose();
+        }
+    }
+
     @OnClick(R.id.send_response)
     public void onSendResponse() {
         String response = responseText.getText().toString();
-        activityHelper.publishResponse(response);
+        activityHelper.sendMessageToClient(response);
     }
 
     @OnClick(R.id.finish)
     public void onFinish() {
+        activityHelper.completeStream();
         finish();
     }
 }

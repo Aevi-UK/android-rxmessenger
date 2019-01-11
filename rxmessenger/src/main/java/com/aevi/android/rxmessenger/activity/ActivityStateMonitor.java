@@ -10,59 +10,74 @@ import android.support.annotation.NonNull;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 
+import static android.arch.lifecycle.Lifecycle.Event.*;
+
 /**
  * Helper class to monitor life cycle events of an activity or fragment.
  */
 public class ActivityStateMonitor implements DefaultLifecycleObserver {
 
     private final ObservableActivityHelper<?> observableActivityHelper;
-    private PublishSubject<String> eventSubject = PublishSubject.create();
+    private final PublishSubject<Lifecycle.Event> lifecycleEventSubject;
+    private Lifecycle lifecycle;
 
-    public ActivityStateMonitor(Lifecycle lifecycle, ObservableActivityHelper observableActivityHelper) {
+    public ActivityStateMonitor(ObservableActivityHelper observableActivityHelper) {
         this.observableActivityHelper = observableActivityHelper;
+        lifecycleEventSubject = PublishSubject.create();
+    }
+
+    public void setLifecycle(Lifecycle lifecycle) {
+        this.lifecycle = lifecycle;
         lifecycle.addObserver(this);
     }
 
-    public Observable<String> getEventObservable() {
-        return eventSubject;
+    public Observable<Lifecycle.Event> getLifecycleEvents() {
+        return lifecycleEventSubject;
     }
 
-    public void sendEvent(String event) {
-        eventSubject.onNext(event);
+    public Lifecycle.State getCurrentState() {
+        return lifecycle != null ? lifecycle.getCurrentState() : null;
     }
 
-    private void onActivityStateChange(LifecycleOwner source, Lifecycle.Event event) {
-        observableActivityHelper.sendLifecycleEvent(event);
+    private void onActivityStateChange(Lifecycle.Event event) {
+        sendLifecycleEvent(event);
+    }
+
+    private void sendLifecycleEvent(Lifecycle.Event event) {
+        lifecycleEventSubject.onNext(event);
+        if (event == ON_DESTROY) {
+            lifecycleEventSubject.onComplete();
+        }
     }
 
     @Override
     public void onCreate(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_CREATE);
+        onActivityStateChange(ON_CREATE);
     }
 
     @Override
     public void onStart(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_START);
+        onActivityStateChange(ON_START);
     }
 
     @Override
     public void onResume(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_RESUME);
+        onActivityStateChange(ON_RESUME);
     }
 
     @Override
     public void onPause(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_PAUSE);
+        onActivityStateChange(ON_PAUSE);
     }
 
     @Override
     public void onStop(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_STOP);
+        onActivityStateChange(ON_STOP);
     }
 
     @Override
     public void onDestroy(@NonNull LifecycleOwner owner) {
-        onActivityStateChange(owner, Lifecycle.Event.ON_DESTROY);
+        onActivityStateChange(ON_DESTROY);
         owner.getLifecycle().removeObserver(this);
         boolean confChange = false;
         if (owner instanceof Activity) {
@@ -71,7 +86,6 @@ public class ActivityStateMonitor implements DefaultLifecycleObserver {
         }
         if (!confChange) {
             observableActivityHelper.removeFromMap();
-            eventSubject.onComplete();
         }
     }
 }
