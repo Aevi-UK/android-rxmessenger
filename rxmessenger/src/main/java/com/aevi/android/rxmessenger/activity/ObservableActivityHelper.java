@@ -13,7 +13,6 @@
  */
 package com.aevi.android.rxmessenger.activity;
 
-import android.annotation.SuppressLint;
 import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
 import android.content.Intent;
@@ -35,12 +34,15 @@ import io.reactivex.subjects.PublishSubject;
 /**
  * Helper class that allows for a request/response style communication between some class and an Android Activity.
  *
- * A class that wants to start an activity to interact with a user and generate some form of response, can create a new instance with {@link #createInstance(Context, Intent)} followed by a call to {@link #startObservableActivity()} in order to
+ * A class that wants to start an activity to interact with a user and generate some form of response, can create a new instance with
+ * {@link #createInstance(Context, Intent)} followed by a call to {@link #startObservableActivity()} in order to
  * retrieve an Observable to subscribe to.
  *
- * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and call {@link #publishResponse(Object)} to pass back a response.
+ * The activity that is started can then use {@link #getInstance(Intent)} with the Intent passed to the Activity to get hold of the instance, and
+ * call {@link #sendMessageToClient(Object)} (Object)} to pass back a response, {@link #sendErrorToClient(MessageException)} for errors and when
+ * the activity is done, call {@link #completeStream()}.
  *
- * The activity should also call {@link #registerForEvents(Lifecycle)} to allow the service or client to send relevant events to it.
+ * The activity should also call {@link #setLifecycle(Lifecycle)} (Lifecycle)} to allow the service to listen for lifecycle events from this activity.
  */
 public class ObservableActivityHelper<T> {
 
@@ -55,13 +57,15 @@ public class ObservableActivityHelper<T> {
 
     private ObservableEmitter<T> emitter;
     private ActivityStateMonitor activityStateMonitor;
-    private PublishSubject<Lifecycle.Event> lifecycleEventSubject;
+
+    private PublishSubject<String> eventSubject;
 
     private ObservableActivityHelper(String id, Context context, Intent intent) {
         this.id = id;
         this.context = context;
         this.intent = intent;
-        lifecycleEventSubject = PublishSubject.create();
+        this.eventSubject = PublishSubject.create();
+        this.activityStateMonitor = new ActivityStateMonitor(this);
     }
 
     /**
@@ -129,10 +133,6 @@ public class ObservableActivityHelper<T> {
     /**
      * Register your activity (or possibly fragment) for events from the messenger service.
      *
-     * NOTE! If you use this - ensure that you include ""android.arch.lifecycle:runtime" as a dependency. In order to avoid conflicts with
-     * the support library in the destination apps, this dependency is compile time only (aka provided) in this project.
-     * See https://developer.android.com/topic/libraries/architecture/adding-components.html for details
-     *
      * These events may come from the remote client of the {@link AbstractChannelService}, or locally
      * in reaction to the lifecycle events of your activity or fragment.
      *
@@ -140,71 +140,83 @@ public class ObservableActivityHelper<T> {
      *
      * Make sure you dispose of any subscription to this if your activity/fragment is destroyed.
      *
-     * @param lifecycle The Lifecycle of your (support) activity/fragment (via getLifecycle())
      * @return A stream of events that your activity/fragment needs to handle appropriately
      */
-    @SuppressLint("RestrictedApi")
     @NonNull
-    public Observable<String> registerForEvents(Lifecycle lifecycle) {
-        Log.d(TAG, "Activity registering for events in helper with id: " + id);
-        activityStateMonitor = new ActivityStateMonitor(lifecycle, this);
-        return activityStateMonitor.getEventObservable();
+    public Observable<String> registerForEvents() {
+        return eventSubject;
     }
 
-    /*
-     * For internal use.
+    /**
+     * Set the life cycle of your activity to allow the service to listen to lifecycle events.
+     *
+     * NOTE! If you use this - ensure that you include ""android.arch.lifecycle:runtime" as a dependency. In order to avoid conflicts with
+     * the support library in the destination apps, this dependency is compile time only (aka provided) in this project.
+     * See https://developer.android.com/topic/libraries/architecture/adding-components.html for details
+     *
+     * @param lifecycle The Lifecycle of your (support) activity/fragment (via getLifecycle())
      */
-    void sendLifecycleEvent(Lifecycle.Event event) {
-        lifecycleEventSubject.onNext(event);
-        if (event == Lifecycle.Event.ON_DESTROY) {
-            Log.d(TAG, "Activity destroyed - shutting down helper with id: " + id);
-            lifecycleEventSubject.onComplete();
-        }
+    public void setLifecycle(Lifecycle lifecycle) {
+        activityStateMonitor.setLifecycle(lifecycle);
+    }
+
+    /**
+     * Get the current activity state, if any.
+     *
+     * @return The activity state, or null if no activity has been started or {@link #setLifecycle(Lifecycle)} was not called.
+     */
+    public Lifecycle.State getCurrentActivityState() {
+        return activityStateMonitor.getCurrentState();
     }
 
     /**
      * This can be called by the {@link AbstractChannelService} subclass to listen to activity lifecycle
-     * events, provided that the activity/fragment called {@link #registerForEvents(Lifecycle)}.
+     * events, provided that the activity/fragment called {@link #setLifecycle(Lifecycle)}.
      *
      * @return A stream of lifecycle events
      */
     @NonNull
     public Observable<Lifecycle.Event> onLifecycleEvent() {
-        return lifecycleEventSubject;
+        return activityStateMonitor.getLifecycleEvents();
     }
 
     /**
      * Send an event to the activity.
      *
-     * Note that this is only successful if the activity has called {@link #registerForEvents(Lifecycle)} previously.
+     * Note that this is only successful if the activity has called {@link #registerForEvents()} previously.
      *
      * @param event The event to send to the activity
      */
     public void sendEventToActivity(String event) {
-        if (activityStateMonitor != null) {
-            activityStateMonitor.sendEvent(event);
-        }
+        eventSubject.onNext(event);
     }
 
     /**
-     * Publish a response back to the calling class.
+     * Send message to client.
      *
-     * @param response The response
+     * @param message The message
      */
-    public void publishResponse(T response) {
-        Log.d(TAG, "publishResponse");
-        emitter.onNext(response);
-        emitter.onComplete();
-        removeFromMap();
+    public void sendMessageToClient(T message) {
+        Log.d(TAG, "sendMessageToClient");
+        emitter.onNext(message);
     }
 
     /**
-     * Return an error back to the calling class.
+     * Return an error back to the client.
      *
      * @param me The exception
      */
-    public void returnError(MessageException me) {
+    public void sendErrorToClient(MessageException me) {
         emitter.onError(me);
+    }
+
+    /**
+     * Complete the stream.
+     */
+    public void completeStream() {
+        Log.d(TAG, "completeStream");
+        emitter.onComplete();
+        removeFromMap();
     }
 
     /**
@@ -228,6 +240,7 @@ public class ObservableActivityHelper<T> {
      * Remove the instance from the map once it's finished.
      */
     void removeFromMap() {
+        Log.d(TAG, "Invalidating OAH with id: " + id);
         INSTANCES_MAP.remove(id);
     }
 
