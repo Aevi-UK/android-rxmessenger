@@ -8,5 +8,6 @@
 /build
 /captures
 .externalNativeBuild
+/javadocs
 temp
 v2apps

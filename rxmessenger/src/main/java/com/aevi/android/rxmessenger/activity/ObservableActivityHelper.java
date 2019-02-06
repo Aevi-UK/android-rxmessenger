@@ -75,6 +75,7 @@ public class ObservableActivityHelper<T> {
      *
      * Note - this should generally *only* be called from a service. From the activity, {@link #getInstance(String)} should be used.
      *
+     * @param <T> The type of object the activity is expected to response with when complete
      * @param context The Android context
      * @param intent  The intent to start the activity
      * @return An instance of {@link ObservableActivityHelper}
@@ -97,6 +98,7 @@ public class ObservableActivityHelper<T> {
     /**
      * Get an already existing {@link ObservableActivityHelper} instance.
      *
+     * @param <T> The type of object the activity is expected to response with when complete
      * @param intent The intent passed in to the Activity
      * @return An instance, or null if not available
      * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since
@@ -115,6 +117,7 @@ public class ObservableActivityHelper<T> {
     /**
      * Get an already existing {@link ObservableActivityHelper} instance.
      *
+     * @param <T> The type of object the activity is expected to response with when complete
      * @param id The id used when creating the instance
      * @return An instance, or null if not available
      * @throws NoSuchInstanceException Thrown when this helper was not used to launch activity, or the service has been shutdown since

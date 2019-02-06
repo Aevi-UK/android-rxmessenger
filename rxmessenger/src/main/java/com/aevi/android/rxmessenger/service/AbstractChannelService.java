@@ -42,9 +42,9 @@ import static com.aevi.android.rxmessenger.MessageConstants.*;
  * If you want to support the websocket channel implementation in your application then you must include the following network permissions in your
  * manifest:
  * <code>
- * <uses-permission android:name="android.permission.INTERNET"/>
- * <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
- * <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+ * &lt;uses-permission android:name="android.permission.INTERNET"/&gt;
+ * &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/&gt;
+ * &lt;uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/&gt;
  * </code>
  */
 public abstract class AbstractChannelService extends Service {
