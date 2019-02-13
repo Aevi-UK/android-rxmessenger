@@ -1,18 +1,15 @@
-plugins {
-    id "com.jfrog.bintray" version "1.7.3"
-}
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
-apply from: '../java-provided.gradle'
-apply from: '../publish-repo.gradle'
-apply from: '../jar-publisher.gradle'
-
 version = "${apiVersion}"
 group = 'com.aevi.android'
 ext.artifactId = 'rxmessenger'
+
+apply from: '../java-provided.gradle'
+apply from: '../publish-repo.gradle'
+apply from: '../jar-publisher.gradle'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -43,28 +40,31 @@ dependencies {
 javadoc {
     source = sourceSets.main.allJava
     destinationDir = file("../javadocs/rxmessenger")
-    classpath = files(configurations.compile, configurations.provided)
-    title = "Android RxMessenger"
+    classpath = files(sourceSets.main.compileClasspath, sourceSets.main.runtimeClasspath)
+    title = "AEVI Android RxMessenger"
     options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
 
-def siteUrl = 'https://github.com/Aevi-UK/android-rx-messenger'
-def gitUrl = 'https://github.com/Aevi-UK/android-rx-messenger.git'
+def siteUrl = 'https://github.com/Aevi-UK/android-rxmessenger'
+def gitUrl = 'https://github.com/Aevi-UK/android-rxmessenger.git'
 
 bintray {
-    configurations = ['archives']
+    publications = ['apiJar']
+    override = true
 
     pkg {
+        dryRun = false
+        publish = true
         repo = 'aevi-uk'
-        name = 'rx-messenger'
+        name = 'rxmessenger'
         userOrg = 'aevi'
         licenses = ['Apache-2.0']
         labels = ['rxjava', 'reactivex', 'android']
         websiteUrl = siteUrl
-        issueTrackerUrl = 'https://github.com/Aevi-UK/android-rx-messenger/issues'
+        issueTrackerUrl = 'https://github.com/Aevi-UK/android-rxmessenger/issues'
         vcsUrl = gitUrl
         publicDownloadNumbers = true
     }
