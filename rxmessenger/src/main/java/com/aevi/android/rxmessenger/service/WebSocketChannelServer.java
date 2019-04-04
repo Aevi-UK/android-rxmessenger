@@ -102,7 +102,7 @@ public class WebSocketChannelServer extends MessengerChannelServer {
         }).observeOn(getSendScheduler()).subscribe(new Consumer<WebSocketConnection>() {
             @Override
             public void accept(WebSocketConnection webSocketConnection) throws Exception {
-                Log.d(TAG, "Websocket server started");
+                Log.d(TAG, "Websocket client connected");
                 WebSocketChannelServer.this.webSocketConnection = webSocketConnection;
                 subscribeToWebSocketMessages(webSocketConnection);
                 handleWebSocketDisconnect(webSocketConnection);
@@ -165,7 +165,6 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
             @Override
             public void onComplete() {
-                Log.d(TAG, "Websocket disconnected");
                 disconnected();
             }
 
@@ -206,6 +205,11 @@ public class WebSocketChannelServer extends MessengerChannelServer {
             @Override
             public void accept(String message) throws Exception {
                 notifyMessage(message);
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                Log.e(TAG, "receiveMessages", throwable);
             }
         });
     }
