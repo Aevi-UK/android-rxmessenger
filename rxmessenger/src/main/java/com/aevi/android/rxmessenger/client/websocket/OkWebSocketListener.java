@@ -43,13 +43,11 @@ public class OkWebSocketListener extends WebSocketListener {
 
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
-        Log.d(TAG, "Websocket opened");
         emitter.onComplete();
     }
 
     @Override
     public void onMessage(WebSocket webSocket, final String text) {
-        Log.d(TAG, "Websocket message: " + text);
         if (text != null && !text.isEmpty()) {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
@@ -67,20 +65,6 @@ public class OkWebSocketListener extends WebSocketListener {
                 }
             });
         }
-    }
-
-    @Override
-    public void onClosing(WebSocket webSocket, int code, String reason) {
-        Log.d(TAG, "Websocket closing");
-        super.onClosing(webSocket, code, reason);
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                if (responseEmitter != null) {
-                    responseEmitter.onComplete();
-                }
-            }
-        });
     }
 
     @Override

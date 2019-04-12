@@ -21,8 +21,8 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoWSD;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.CompletableSubject;
-import io.reactivex.subjects.PublishSubject;
 
 import static fi.iki.elonen.NanoWSD.WebSocketFrame.CloseCode.NormalClosure;
 
@@ -33,7 +33,8 @@ public class WebSocketConnection extends NanoWSD.WebSocket {
 
     private static final String TAG = WebSocketConnection.class.getSimpleName();
     private CompletableSubject connectSubject = CompletableSubject.create();
-    private PublishSubject<String> responseSubject = PublishSubject.create();
+    // WebSocketChannelServer may call receiveMessages() AFTER the request comes in
+    private BehaviorSubject<String> responseSubject = BehaviorSubject.create();
     private CompletableSubject disconnectedSubject = CompletableSubject.create();
 
     WebSocketConnection(NanoHTTPD.IHTTPSession handshakeRequest) {
@@ -74,7 +75,6 @@ public class WebSocketConnection extends NanoWSD.WebSocket {
 
     @Override
     protected void onOpen() {
-        Log.d(TAG, "Websocket open");
         connectSubject.onComplete();
     }
 

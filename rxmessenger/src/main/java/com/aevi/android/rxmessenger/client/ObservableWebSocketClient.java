@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.aevi.android.rxmessenger.client.websocket.OkWebSocketClient;
 import com.aevi.android.rxmessenger.model.ConnectionParams;
@@ -29,18 +28,12 @@ import com.google.gson.GsonBuilder;
 
 import java.util.concurrent.Callable;
 
-import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
-import io.reactivex.CompletableObserver;
-import io.reactivex.CompletableOnSubscribe;
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
+import io.reactivex.*;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
 
-import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_WEBSOCKET;
-import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
+import static com.aevi.android.rxmessenger.MessageConstants.*;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNECT_PLEASE;
 
 /**
@@ -105,7 +98,6 @@ public class ObservableWebSocketClient extends ObservableMessengerClient {
                     @Override
                     public void accept(String message) throws Exception {
                         ConnectionParams params = gson.fromJson(message, ConnectionParams.class);
-                        Log.d(TAG, String.format("Attempting to connect to websocket: %s:%d", params.getHostAddress(), params.getPort()));
                         okWebSocketClient = getWebSocketClient(params);
                         okWebSocketClient.doConnect(CONNECTION_TIMEOUT).subscribe(new CompletableObserver() {
                             @Override
