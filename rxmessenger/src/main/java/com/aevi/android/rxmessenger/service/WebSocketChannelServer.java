@@ -14,6 +14,8 @@
 package com.aevi.android.rxmessenger.service;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
@@ -201,17 +203,24 @@ public class WebSocketChannelServer extends MessengerChannelServer {
     }
 
     private void subscribeToWebSocketMessages(WebSocketConnection webSocketConnection) {
-        webSocketConnection.receiveMessages().subscribe(new Consumer<String>() {
-            @Override
-            public void accept(String message) throws Exception {
-                notifyMessage(message);
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-                Log.e(TAG, "receiveMessages", throwable);
-            }
-        });
+        webSocketConnection.receiveMessages()
+                .subscribe(new Consumer<String>() {
+                    @Override
+                    public void accept(final String message) throws Exception {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                notifyMessage(message);
+                            }
+                        });
+
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        Log.e(TAG, "receiveMessages", throwable);
+                    }
+                });
     }
 
 
