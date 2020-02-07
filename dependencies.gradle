@@ -10,6 +10,7 @@ ext {
     rxAndroidVersion = '2.1.0'
     archLifecycleVersion = '1.0.3'
     archLifecycleJava8Version = '1.1.0'
+    bouncycastleVersion = '1.58.0.0'
 
     supportLibrary = '28.0.0'
     butterKnifeVersion = '8.8.1'
@@ -43,7 +44,8 @@ ext {
             nanoHttpd         : "org.nanohttpd:nanohttpd:$nanoHttpdVersion",
             nanoWebsockets    : "org.nanohttpd:nanohttpd-websocket:$nanoHttpdVersion",
             archLifecycle     : "android.arch.lifecycle:runtime:$archLifecycleVersion",
-            archLifecycleJava8: "android.arch.lifecycle:common-java8:$archLifecycleJava8Version"
+            archLifecycleJava8: "android.arch.lifecycle:common-java8:$archLifecycleJava8Version",
+            bouncycastle      : "com.madgag.spongycastle:bcpkix-jdk15on:$bouncycastleVersion"
     ]
 
     testDependencies = [
