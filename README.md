@@ -154,9 +154,11 @@ into production.
 > NOTE: If the websocket channel is chosen the initial communication will still be via Android Messenger. This is so that hostname and port
 details can be shared between client and server in order to setup the initial websocket.
 
-> NOTE: Currently websocket communication will take place over SSL however the server certificate and private key is contained in this library
-for simplicity. Future releases of this library will allow the server SSL cert and key to be passed into the `Channels` factory so that true
-secure communication can be used.
+> NOTE: Currently websocket communication will take place over SSL the server certificate and private key is generated automatically on first use by the server application
+and stored in the Android key store. Each application using rx-messenger over websockets will generate its own self signed certificate and 2048 bit private key. 
+The common name (CN) of the certificate will be equal to the package name of the application. Client connections automatically verify that the certificate received has the 
+correct package name. Note that websocket SSL is used only to ensure the data is encrypted in transit, full verification and identification of server application via a CA 
+certficiate chain is not implemented at this time (the server certificate is self-signed). 
 
 If using a websocket for communication your application(s) must make use of the android permissions shown below to allow networking access.
 

@@ -28,7 +28,12 @@ import com.google.gson.GsonBuilder;
 
 import java.util.concurrent.Callable;
 
-import io.reactivex.*;
+import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
+import io.reactivex.CompletableObserver;
+import io.reactivex.CompletableOnSubscribe;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.PublishSubject;
@@ -132,7 +137,7 @@ public class ObservableWebSocketClient extends ObservableMessengerClient {
     }
 
     protected OkWebSocketClient getWebSocketClient(ConnectionParams params) {
-        return new OkWebSocketClient(params);
+        return new OkWebSocketClient(params, serviceComponentName.getPackageName());
     }
 
     @Override
