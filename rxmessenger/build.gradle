@@ -32,10 +32,6 @@ dependencies {
     testImplementation testDependencies.assertJ
     testImplementation testDependencies.robolectric
     testImplementation testDependencies.hamcrest
-
-    // FIXME - Latest version of Android Studio seems to require these to run this projects unit tests but they are not required for gradle externally!?
-    testImplementation "org.ow2.asm:asm:6.2.1"
-    testImplementation "org.ow2.asm:asm-commons:6.2.1"
 }
 
 javadoc {
