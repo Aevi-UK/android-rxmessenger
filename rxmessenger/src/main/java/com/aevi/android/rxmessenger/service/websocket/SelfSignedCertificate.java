@@ -12,10 +12,12 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.operator.ContentSigner;
 import org.spongycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -61,6 +63,8 @@ public final class SelfSignedCertificate {
         try {
             generateKeystore(context, notBefore, notAfter);
         } catch (Exception e) {
+            // if we fail for any reason here remove the key/cert so that next time we are called a new key/cert will be created
+            clearPreviousKey(context);
             throw new CertificateException("Failed to generate certificate for secure websocket", e);
         }
     }
@@ -95,8 +99,7 @@ public final class SelfSignedCertificate {
     }
 
     private void generateKeystore(Context context, Date notBefore, Date notAfter) throws Exception {
-        keystore = KeyStore.getInstance("AndroidKeyStore");
-        keystore.load(null);
+        openKeystore();
         String fqdn = context.getPackageName();
         if (!keystore.containsAlias(fqdn)) {
             Log.d(TAG, "Adding new key and to keystore");
@@ -118,11 +121,33 @@ public final class SelfSignedCertificate {
         keyManagerFactory.init(keystore, null);
     }
 
+    private void openKeystore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        keystore = KeyStore.getInstance("AndroidKeyStore");
+        keystore.load(null);
+    }
+
     KeyStore getKeystore() {
         return keystore;
     }
 
     KeyManagerFactory getKeyManagerFactory() {
         return keyManagerFactory;
+    }
+
+    private void clearPreviousKey(Context context) {
+        try {
+            if (keystore == null) {
+                openKeystore();
+            }
+
+            String fqdn = context.getPackageName();
+            if (keystore != null) {
+                if (keystore.containsAlias(fqdn)) {
+                    keystore.deleteEntry(fqdn);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed while trying to clear up old key/cert", e);
+        }
     }
 }
