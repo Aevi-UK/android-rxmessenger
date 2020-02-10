@@ -1,4 +1,4 @@
-version = "5.0.2"
+version = "5.0.3-SNAPSHOT"
 
 buildscript {
     repositories {
@@ -27,7 +27,6 @@ allprojects {
         }
     }
 }
-
 
 
 task clean(type: Delete) {

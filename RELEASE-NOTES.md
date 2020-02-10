@@ -1,5 +1,21 @@
 ## Release Notes for the AEVI Android rx messenger API
 
+## Version 5.0.3
+
+* Add ability for rx-messemger servers using websockets to create there own private key and certificate for SSL communication.
+
+## Version 5.0.2
+
+* Ensure message callbacks happen on UI thread for websockets
+
+## Version 5.0.1
+
+* Fixed message posting bug and removed redundant log entries
+
+## Version 5.0.0
+
+* Refactored to separatedmessage streams from activity lifecycle management
+
 ## Version 4.0.0
 
 * Refactored communication channel mechanism to allow different channels to be used for the underlying communication

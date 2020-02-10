@@ -12,14 +12,9 @@ to choose whatever serialisation mechanism they want to serialise the data (we r
 
 ## Adding rxmessenger dependency
 
-The rxmessenger library is published to bintray. Add the below to your top-level build.gradle repositories DSL,
-```
-maven {
-            url "http://dl.bintray.com/aevi/aevi-uk"
-        }
-```
+The rxmessenger library is published to bintray in the jcenter repo.
 
-Then, in your application build.gradle,
+In your application build.gradle,
 
 ```
 implementation "com.aevi.android:rxmessenger:<version>"
