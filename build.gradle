@@ -1,4 +1,4 @@
-version = "5.0.2"
+version = "5.0.3-SNAPSHOT"
 
 buildscript {
     repositories {
@@ -6,7 +6,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.2'
+        classpath 'com.android.tools.build:gradle:3.5.3'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.1'
     }
 }
@@ -27,7 +27,6 @@ allprojects {
         }
     }
 }
-
 
 
 task clean(type: Delete) {

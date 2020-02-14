@@ -30,8 +30,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
 
 import static android.content.Context.WIFI_SERVICE;
-import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_FILENAME;
-import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_PASS;
 
 /**
  * Internal class used to create a websocket server that channels can use to send/receive messages
@@ -48,12 +46,13 @@ public class WebSocketServer extends NanoWSD {
     private String hostname;
     private int port;
 
-    private WebSocketServer(String hostname, int port) {
+    private WebSocketServer(Context context, String hostname, int port) {
         super(hostname, port);
         this.hostname = hostname;
         this.port = port;
         try {
-            makeSecure(NanoHTTPD.makeSSLSocketFactory(KEYSTORE_FILENAME, KEYSTORE_PASS), null);
+            SelfSignedCertificate ssc = new SelfSignedCertificate(context);
+            makeSecure(NanoHTTPD.makeSSLSocketFactory(ssc.getKeystore(), ssc.getKeyManagerFactory()), null);
         } catch (Exception e) {
             Log.e(TAG, "Failed to make secure ws server", e);
         }
@@ -107,7 +106,7 @@ public class WebSocketServer extends NanoWSD {
     public static WebSocketServer create(Context context) {
         WifiManager wm = (WifiManager) context.getApplicationContext().getSystemService(WIFI_SERVICE);
         String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
-        return new WebSocketServer(ip, nextFreePort(MIN_PORT, MAX_PORT));
+        return new WebSocketServer(context, ip, nextFreePort(MIN_PORT, MAX_PORT));
     }
 
     private static int nextFreePort(int from, int to) {

@@ -17,7 +17,8 @@ import butterknife.OnClick;
 
 public class ClientActivity extends AppCompatActivity {
 
-    private static final ComponentName SERVICE = new ComponentName("com.aevi.android.rxmessenger.sample.server", "com.aevi.android.rxmessenger.sample.server.SampleService");
+    private static final ComponentName SERVICE =
+            new ComponentName("com.aevi.android.rxmessenger.sample.server", "com.aevi.android.rxmessenger.sample.server.SampleService");
 
     private ChannelClient messengerClient;
     private Gson gson;
@@ -37,7 +38,7 @@ public class ClientActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        messengerClient = Channels.messenger(this, SERVICE);
+        messengerClient = Channels.webSocket(this, SERVICE);
     }
 
     @OnClick(R.id.bind)
@@ -55,7 +56,8 @@ public class ClientActivity extends AppCompatActivity {
                 .sendMessage(gson.toJson(sampleMessage))
                 .doOnSubscribe(disposable -> status.setText(R.string.connected_to_service_with_stream))
                 .doOnComplete(() -> status.setText(R.string.connected_to_service_no_stream))
-                .subscribe(response -> message.setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
+                .subscribe(response -> message
+                        .setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
     }
 
 
@@ -64,7 +66,8 @@ public class ClientActivity extends AppCompatActivity {
         SampleMessage sampleMessage = new SampleMessage(MessageTypes.END_STREAM);
         messengerClient.sendMessage(gson.toJson(sampleMessage))
                 .doOnComplete(() -> messengerClient.closeConnection())
-                .subscribe(response -> message.setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
+                .subscribe(response -> message
+                        .setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
     }
 
     @OnClick(R.id.disconnect)

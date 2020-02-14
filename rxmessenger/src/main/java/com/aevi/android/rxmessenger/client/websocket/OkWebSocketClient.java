@@ -17,17 +17,16 @@ import android.util.Log;
 
 import com.aevi.android.rxmessenger.model.ConnectionParams;
 
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import io.reactivex.Completable;
 import io.reactivex.CompletableEmitter;
@@ -36,9 +35,6 @@ import io.reactivex.subjects.PublishSubject;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
-
-import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_FILENAME;
-import static com.aevi.android.rxmessenger.model.KeystoreCredentials.KEYSTORE_PASS;
 
 /**
  * For internal use only
@@ -50,11 +46,13 @@ public class OkWebSocketClient {
     private static final int CODE_CLOSE = 1000;
 
     private final ConnectionParams connectionParams;
+    private final String serverPackageName;
     private WebSocket webSocket;
     private OkWebSocketListener listener;
 
-    public OkWebSocketClient(ConnectionParams connectionParams) {
+    public OkWebSocketClient(ConnectionParams connectionParams, String serverPackageName) {
         this.connectionParams = connectionParams;
+        this.serverPackageName = serverPackageName;
     }
 
     @SuppressWarnings("deprecation")
@@ -87,17 +85,48 @@ public class OkWebSocketClient {
     }
 
     private SSLSocketFactory makeSecure() throws Exception {
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        InputStream keystoreStream = OkWebSocketClient.class.getResourceAsStream(KEYSTORE_FILENAME);
-        keystore.load(keystoreStream, KEYSTORE_PASS);
 
-        SSLContext sslContext = SSLContext.getInstance("SSL");
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keystore, KEYSTORE_PASS);
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
+        // EVERY server has a different and unique self signed certificate.
+        // We are assuming (trusting) that the end point server is who we think it is by checking the CN of the certificate matches
+        // the package name we have requested to connect to. This of course could be spoofed as there is no verifying certifcate authority chain
+        // as this would require a CA private key to be stored/accessible to your application.
+        // We are using websockets over TLS here ONLY to ensure data is encrypted in transit
+        final TrustManager[] trustAllCerts = new TrustManager[]{new CertMatchingTrustManager(serverPackageName)};
+
+        // Install the all-trusting trust manager
+        final SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
         return sslContext.getSocketFactory();
+    }
+
+    private static class CertMatchingTrustManager implements X509TrustManager {
+
+        private String serverPackageName;
+
+        public CertMatchingTrustManager(String serverPackageName) {
+            this.serverPackageName = serverPackageName;
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+            for (X509Certificate certificate : x509Certificates) {
+                String toMatch = certificate.getSubjectDN().getName();
+                if (toMatch.contains("CN=" + serverPackageName)) {
+                    return;
+                }
+            }
+            throw new CertificateException("Attempt to connect to untrusted/incorrect rx-messenger server");
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
     }
 
     public boolean isConnected() {
