@@ -45,7 +45,7 @@ public class SampleService extends AbstractChannelService implements ChannelServ
                     channelServer.closeClient();
                     break;
             }
-        });
+        }, throwable -> System.out.println("Whoops"));
     }
 
     private void startObservableActivity(final ChannelServer channelServer) {

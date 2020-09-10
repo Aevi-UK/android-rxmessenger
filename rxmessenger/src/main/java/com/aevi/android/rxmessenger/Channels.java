@@ -19,12 +19,25 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.client.ObservableMessengerClient;
+import com.aevi.android.rxmessenger.client.ObservablePipeClient;
 import com.aevi.android.rxmessenger.client.ObservableWebSocketClient;
 
 /**
  * Factory class that can be used to obtain any type of rx-messenger {@link ChannelClient}
  */
 public final class Channels {
+
+    /**
+     * Obtain a messenger {@link ChannelClient}
+     *
+     * @param context       The Android context
+     * @param componentName The name of the component to connect to
+     * @return A {@link ChannelClient} that will communicate over Android Messenger
+     */
+    @NonNull
+    public static ChannelClient pipe(Context context, ComponentName componentName) {
+        return new ObservablePipeClient(context, componentName);
+    }
 
     /**
      * Obtain a messenger {@link ChannelClient}

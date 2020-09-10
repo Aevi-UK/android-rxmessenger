@@ -19,6 +19,8 @@ import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.ChannelServer;
 
+import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_MESSENGER;
+import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_PIPE;
 import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_WEBSOCKET;
 
 final class ChannelServerFactory {
@@ -31,6 +33,9 @@ final class ChannelServerFactory {
         switch (channelType) {
             case CHANNEL_WEBSOCKET:
                 channelServer = new WebSocketChannelServer(context, serviceComponentName, clientPackageName);
+                break;
+            case CHANNEL_PIPE:
+                channelServer = new PipeChannelServer(serviceComponentName, clientPackageName);
                 break;
             default:
                 channelServer = new MessengerChannelServer(serviceComponentName, clientPackageName);

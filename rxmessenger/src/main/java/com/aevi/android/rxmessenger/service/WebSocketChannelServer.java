@@ -224,14 +224,14 @@ public class WebSocketChannelServer extends MessengerChannelServer {
 
 
     @Override
-    public boolean send(final String message) {
+    public boolean send(final String data) {
         if (webSocketConnection != null && webSocketConnection.isConnected()) {
             // normal message sends go over web socket channel
-            sendMessageQueue.onNext(message);
+            sendMessageQueue.onNext(data);
             return true;
         } else {
             // fallback to messenger
-            return super.send(message);
+            return super.send(data);
         }
     }
 

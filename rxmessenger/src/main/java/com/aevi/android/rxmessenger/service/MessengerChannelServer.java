@@ -84,10 +84,14 @@ public class MessengerChannelServer extends BaseChannelServer {
     }
 
     @Override
-    public boolean send(String senddata) {
+    public boolean send(String data) {
         Bundle b = new Bundle();
-        b.putString(KEY_DATA_RESPONSE, senddata);
-        Message message = createMessage(b, MESSAGE_RESPONSE);
+        b.putString(KEY_DATA_RESPONSE, data);
+        return send(b);
+    }
+
+    public boolean send(Bundle bundle) {
+        Message message = createMessage(bundle, MESSAGE_RESPONSE);
         return send(message);
     }
 

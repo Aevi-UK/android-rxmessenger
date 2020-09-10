@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 public class ClientActivity extends AppCompatActivity {
 
@@ -40,7 +41,7 @@ public class ClientActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        messengerClient = Channels.webSocket(this, SERVICE);
+        messengerClient = Channels.pipe(this, SERVICE);
     }
 
     @OnClick(R.id.bind)
@@ -56,10 +57,12 @@ public class ClientActivity extends AppCompatActivity {
         SampleMessage sampleMessage = new SampleMessage(MessageTypes.START_ACTIVITY);
         messengerClient
                 .sendMessage(gson.toJson(sampleMessage))
+                .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe(disposable -> status.setText(R.string.connected_to_service_with_stream))
                 .doOnComplete(() -> status.setText(R.string.connected_to_service_no_stream))
-                .subscribe(response -> message
-                        .setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
+                .subscribe(response ->
+                            message
+                                    .setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
     }
 
 
@@ -67,8 +70,10 @@ public class ClientActivity extends AppCompatActivity {
     public void onSendEnd() {
         SampleMessage sampleMessage = new SampleMessage(MessageTypes.END_STREAM);
         messengerClient.sendMessage(gson.toJson(sampleMessage))
+                .observeOn(AndroidSchedulers.mainThread())
                 .doOnComplete(() -> messengerClient.closeConnection())
-                .subscribe(response -> message
+                .subscribe(response ->
+                        message
                         .setText(getString(R.string.received_response, gson.fromJson(response, SampleMessage.class).getMessageData())));
     }
 

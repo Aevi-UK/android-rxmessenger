@@ -17,6 +17,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -80,11 +81,14 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
     /**
      * Default handler proxies the message straight to the client.
      */
-    void handleMessage(String data, String sender, Subject<String> callbackEmitter) {
-        if (onHandleMessageCallback == null) {
-            callbackEmitter.onNext(data);
-        } else {
-            onHandleMessageCallback.handleMessage(data, sender, callbackEmitter);
+    void handleData(Bundle data, String sender, Subject<String> callbackEmitter) {
+        if (data.containsKey(KEY_DATA_RESPONSE)) {
+            String json = data.getString(KEY_DATA_RESPONSE);
+            if (onHandleMessageCallback == null) {
+                callbackEmitter.onNext(json);
+            } else {
+                onHandleMessageCallback.handleMessage(json, sender, callbackEmitter);
+            }
         }
     }
 
@@ -230,5 +234,6 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
     public interface OnHandleMessageCallback {
 
         void handleMessage(String data, String sender, Subject<String> callbackEmitter);
+
     }
 }

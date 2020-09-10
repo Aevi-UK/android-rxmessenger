@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.ParcelFileDescriptor;
 
 import com.aevi.android.rxmessenger.MessageException;
 
@@ -54,10 +55,7 @@ class IncomingHandler extends Handler {
                 String sender = data.getString(KEY_DATA_SENDER);
                 switch (msg.what) {
                     case MESSAGE_RESPONSE:
-                        if (data.containsKey(KEY_DATA_RESPONSE)) {
-                            String json = data.getString(KEY_DATA_RESPONSE);
-                            client.handleMessage(json, sender, callbackEmitter);
-                        }
+                        client.handleData(data, sender, callbackEmitter);
                         break;
                     case MESSAGE_END_STREAM:
                         callbackEmitter.onComplete();
