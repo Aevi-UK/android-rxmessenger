@@ -16,6 +16,8 @@ package com.aevi.android.rxmessenger;
 import android.os.IBinder;
 import android.os.Message;
 
+import androidx.annotation.NonNull;
+
 import io.reactivex.Observable;
 
 /**
@@ -68,6 +70,7 @@ public interface ChannelServer extends IBinder.DeathRecipient {
      *
      * @return An observable stream of client messages
      */
+    @NonNull
     Observable<String> subscribeToMessages();
 
     /**

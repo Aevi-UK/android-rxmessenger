@@ -7,7 +7,8 @@ import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.MessageException;
 import com.aevi.android.rxmessenger.service.websocket.WebSocketConnection;

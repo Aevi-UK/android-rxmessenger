@@ -2,8 +2,10 @@ package com.aevi.android.rxmessenger.sample.client;
 
 import android.content.ComponentName;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.aevi.android.rxmessenger.ChannelClient;
 import com.aevi.android.rxmessenger.Channels;

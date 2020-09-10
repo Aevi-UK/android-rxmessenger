@@ -43,9 +43,8 @@ import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
 
 /**
  * An websocket implementation of an {@link ChannelServer}. Will automatically fall back to messenger comms if the websocket fails.
- * <p>
+ *
  * The websocket will be setup on the first available port found in the range 4001-5999
- * </p>
  */
 public class WebSocketChannelServer extends MessengerChannelServer {
 

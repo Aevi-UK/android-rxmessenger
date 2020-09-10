@@ -11,8 +11,9 @@ import com.aevi.android.rxmessenger.sample.common.MessageTypes;
 import com.aevi.android.rxmessenger.service.AbstractChannelService;
 import com.google.gson.Gson;
 
-import static android.arch.lifecycle.Lifecycle.Event.ON_DESTROY;
+
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static androidx.lifecycle.Lifecycle.Event.ON_DESTROY;
 
 public class SampleService extends AbstractChannelService implements ChannelServer.ClientListener {
 

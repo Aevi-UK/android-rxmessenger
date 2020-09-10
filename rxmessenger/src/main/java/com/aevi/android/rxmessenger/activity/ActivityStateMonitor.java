@@ -2,15 +2,17 @@ package com.aevi.android.rxmessenger.activity;
 
 
 import android.app.Activity;
-import android.arch.lifecycle.DefaultLifecycleObserver;
-import android.arch.lifecycle.Lifecycle;
-import android.arch.lifecycle.LifecycleOwner;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 
-import static android.arch.lifecycle.Lifecycle.Event.*;
+import static androidx.lifecycle.Lifecycle.Event.*;
+
 
 /**
  * Helper class to monitor life cycle events of an activity or fragment.
