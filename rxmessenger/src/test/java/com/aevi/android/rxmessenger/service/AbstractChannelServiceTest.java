@@ -16,7 +16,8 @@ package com.aevi.android.rxmessenger.service;
 import android.content.Intent;
 import android.os.Message;
 import android.os.Messenger;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.ChannelServer;
 import com.aevi.android.rxmessenger.MockShadowMessenger;

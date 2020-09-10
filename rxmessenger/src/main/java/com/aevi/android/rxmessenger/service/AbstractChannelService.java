@@ -17,9 +17,11 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.*;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.aevi.android.rxmessenger.ChannelServer;
 

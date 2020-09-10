@@ -13,6 +13,8 @@
  */
 package com.aevi.android.rxmessenger;
 
+import androidx.annotation.NonNull;
+
 import com.aevi.android.rxmessenger.client.NoSuchServiceException;
 
 import io.reactivex.Completable;
@@ -32,6 +34,7 @@ public interface ChannelClient {
      *
      * @return Completable that will complete on success and error on failure
      */
+    @NonNull
     Completable connect();
 
     /**
@@ -57,6 +60,7 @@ public interface ChannelClient {
      * @return An Observable stream of Strings containing data that the service sends back to this client
      * @throws NoSuchServiceException Thrown if client cannot find the corresponding service to connect to
      */
+    @NonNull
     Observable<String> sendMessage(final String requestData);
 
     /**

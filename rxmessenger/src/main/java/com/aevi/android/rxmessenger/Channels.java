@@ -16,6 +16,8 @@ package com.aevi.android.rxmessenger;
 import android.content.ComponentName;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.aevi.android.rxmessenger.client.ObservableMessengerClient;
 import com.aevi.android.rxmessenger.client.ObservableWebSocketClient;
 
@@ -31,6 +33,7 @@ public final class Channels {
      * @param componentName The name of the component to connect to
      * @return A {@link ChannelClient} that will communicate over Android Messenger
      */
+    @NonNull
     public static ChannelClient messenger(Context context, ComponentName componentName) {
         return new ObservableMessengerClient(context, componentName);
     }
@@ -42,6 +45,7 @@ public final class Channels {
      * @param componentName The name of the component to connect to
      * @return A {@link ChannelClient} that will communicate over Android Messenger initially to setup a websocket and then use that for all messages
      */
+    @NonNull
     public static ChannelClient webSocket(Context context, ComponentName componentName) {
         return new ObservableWebSocketClient(context, componentName);
     }

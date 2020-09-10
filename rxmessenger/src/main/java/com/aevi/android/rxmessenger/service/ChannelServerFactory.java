@@ -14,7 +14,8 @@
 package com.aevi.android.rxmessenger.service;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.ChannelServer;
 

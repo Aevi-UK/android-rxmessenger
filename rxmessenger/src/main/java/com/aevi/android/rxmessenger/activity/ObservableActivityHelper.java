@@ -13,10 +13,12 @@
  */
 package com.aevi.android.rxmessenger.activity;
 
-import android.arch.lifecycle.Lifecycle;
+
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+
+import androidx.lifecycle.Lifecycle;
 
 import com.aevi.android.rxmessenger.MessageException;
 import com.aevi.android.rxmessenger.service.AbstractChannelService;

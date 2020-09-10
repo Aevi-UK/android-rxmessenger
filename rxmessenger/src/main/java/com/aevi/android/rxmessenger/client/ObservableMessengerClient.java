@@ -16,8 +16,10 @@ package com.aevi.android.rxmessenger.client;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
+
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.ChannelClient;
 import com.aevi.android.rxmessenger.service.AbstractChannelService;
