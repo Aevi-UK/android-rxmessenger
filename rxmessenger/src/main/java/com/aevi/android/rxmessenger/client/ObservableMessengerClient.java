@@ -203,7 +203,9 @@ public class ObservableMessengerClient extends BaseChannelClient implements Chan
         IncomingHandler incomingHandler = new IncomingHandler(this, responseEmitter);
         String clientId = UUID.randomUUID().toString();
         Intent serviceIntent = getServiceIntent(clientId);
-        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler, clientId, getChannelType(), context.getPackageName());
+        String channelType = getChannelType();
+        serviceIntent.putExtra(KEY_CHANNEL_TYPE, channelType);
+        MessengerConnection messengerConnection = new MessengerConnection(incomingHandler, clientId, channelType, context.getPackageName());
         boolean canBind = context.bindService(serviceIntent, messengerConnection, Context.BIND_AUTO_CREATE);
         if (canBind) {
             return messengerConnection.getConnectedObservable();
