@@ -90,8 +90,12 @@ public class PipeChannelServer extends BaseChannelServer {
                 notifyMessage(message);
             }
         });
-        pipe = new Pipe(descriptor, callback);
+        pipe = createPipe(descriptor);
         pipe.run();
+    }
+
+    protected Pipe createPipe(ParcelFileDescriptor descriptor) {
+        return new Pipe(descriptor, callback);
     }
 
     @Override
