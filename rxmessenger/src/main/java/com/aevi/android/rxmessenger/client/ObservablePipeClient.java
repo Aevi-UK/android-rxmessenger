@@ -15,8 +15,11 @@ package com.aevi.android.rxmessenger.client;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+
+import androidx.annotation.NonNull;
 
 import com.aevi.android.rxmessenger.ChannelClient;
 import com.aevi.android.rxmessenger.service.AbstractChannelService;
@@ -36,6 +39,8 @@ import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
 import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_PIPE;
+import static com.aevi.android.rxmessenger.MessageConstants.CHANNEL_WEBSOCKET;
+import static com.aevi.android.rxmessenger.MessageConstants.KEY_CHANNEL_TYPE;
 import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_PIPE;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNECT_PLEASE;
 
@@ -75,9 +80,13 @@ public class ObservablePipeClient extends ObservableMessengerClient {
     }
 
     private void setupPipe(ParcelFileDescriptor descriptor) {
-        pipe = new Pipe(descriptor, responseEmitter);
+        pipe = getPipe(descriptor);
         pipe.run();
         setup.onComplete();
+    }
+
+    protected Pipe getPipe(ParcelFileDescriptor descriptor) {
+        return new Pipe(descriptor, responseEmitter);
     }
 
     @Override
@@ -152,6 +161,13 @@ public class ObservablePipeClient extends ObservableMessengerClient {
     @Override
     public boolean isConnected() {
         return super.isConnected() || pipe != null && pipe.isConnected();
+    }
+
+    @NonNull
+    protected Intent getServiceIntent(String clientId) {
+        Intent intent = super.getServiceIntent(clientId);
+        intent.putExtra(KEY_CHANNEL_TYPE, CHANNEL_PIPE);
+        return intent;
     }
 
     @Override
