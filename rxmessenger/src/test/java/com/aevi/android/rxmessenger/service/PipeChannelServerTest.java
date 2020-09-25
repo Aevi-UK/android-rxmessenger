@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 
@@ -14,16 +15,18 @@ import androidx.annotation.NonNull;
 import com.aevi.android.rxmessenger.MessageException;
 import com.aevi.android.rxmessenger.service.pipe.Pipe;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.Shadows;
 
 import java.io.IOException;
 
-import io.reactivex.Completable;
 import io.reactivex.Scheduler;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.Schedulers;
@@ -39,9 +42,12 @@ import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_RESPONSE;
 import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_SENDER;
 import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_ERROR;
 import static com.aevi.android.rxmessenger.MessageConstants.MESSAGE_REQUEST;
+import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CLOSE_MESSAGE;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNECT_PLEASE;
 import static org.assertj.core.api.Java6Assertions.assertThat;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,46 +65,32 @@ public class PipeChannelServerTest {
     Context context;
 
     @Mock
-    WifiManager wifiManager;
-
-    @Mock
-    WifiInfo wifiInfo;
-
-    @Mock
     Pipe pipe;
 
     @Mock
     Messenger replyToMessenger;
 
-    private Scheduler testScheduler = Schedulers.trampoline();
 
     private PublishSubject<String> messageStream = PublishSubject.create();
-    private CompletableSubject disconnectCompletable = CompletableSubject.create();
 
     @Before
     public void setup() {
         initMocks(this);
-        pipeChannelServer = new TestPipeChannelServer(COMPONENT_NAME, CLIENT_PACKAGE_NAME);
-
+        pipeChannelServer = Mockito.spy(new TestPipeChannelServer(COMPONENT_NAME, CLIENT_PACKAGE_NAME));
         when(context.getApplicationContext()).thenReturn(context);
-        when(context.getSystemService(WIFI_SERVICE)).thenReturn(wifiManager);
-        when(wifiManager.getConnectionInfo()).thenReturn(wifiInfo);
-        when(wifiInfo.getIpAddress()).thenReturn(111222333);
     }
 
     @Test
     public void willStartServerOnFirstMessage() {
-        setupWebserverConnectionNever();
+        sendConnectMessage();
 
-        sendFirstMessage();
-
-//        verify(webSocketServer).startServer();
+        Assert.assertTrue(pipeChannelServer.completable.hasComplete());
     }
 
     @Test
     public void preventConnectMessageBeingPassedToClient() {
-        setupWebserverConnection();
-        sendFirstMessage();
+        setupServerConnection();
+        sendConnectMessage();
 
         String msg = CONNECT_PLEASE;
         TestObserver<String> testObserver = observeServerMessages();
@@ -109,8 +101,8 @@ public class PipeChannelServerTest {
 
     @Test
     public void willNotifyMessages() {
-        setupWebserverConnection();
-        sendFirstMessage();
+        setupServerConnection();
+        sendConnectMessage();
 
         String msg = "Yo, server";
         TestObserver<String> testObserver = observeServerMessages();
@@ -121,28 +113,26 @@ public class PipeChannelServerTest {
 
     @Test
     public void willSubscribeToMessagesOnStartServer() {
-        setupWebserverConnection();
-        sendFirstMessage();
+        setupServerConnection();
+        sendConnectMessage();
 
 //        verify(pipe).receiveMessages();
     }
 
     @Test
-    public void willStopOnWebSocketDisconnected() throws IOException {
-        setupWebserverConnection();
-        setupDisconnect();
-        sendFirstMessage();
+    public void willStopOnSocketDisconnected() throws IOException {
+        setupServerConnection();
+        sendConnectMessage();
 
         TestObserver<String> testObserver = observeServerMessages();
-        disconnectCompletable.onComplete();
 
         verifyStopAndComplete(testObserver);
     }
 
     @Test
     public void willDisconnectOnEndStream() throws IOException {
-        setupWebserverConnection();
-        sendFirstMessage();
+        setupServerConnection();
+        sendConnectMessage();
 
         pipeChannelServer.sendEndStream();
 
@@ -151,8 +141,8 @@ public class PipeChannelServerTest {
 
     @Test
     public void canSendMessageToClient() throws IOException {
-        setupWebserverConnection();
-        sendFirstMessage();
+        setupServerConnection();
+        sendConnectMessage();
 
         String msg = "Hello client, are you are ok?";
 
@@ -162,23 +152,15 @@ public class PipeChannelServerTest {
     }
 
     @Test
-    public void checkWillHandleStartServerError() throws RemoteException {
-        setupWebserverConnectionError();
-
-        sendFirstMessage();
-
-        verifySentMessage(2, MESSAGE_ERROR, new MessageException("websocketError", "Unable to setup websocket server: " + "Arg").toJson());
-    }
-
-    @Test
     public void willHandleOnDisconnectError() throws IOException {
-        setupWebserverConnection();
-        setupDisconnectError();
-        sendFirstMessage();
+        doThrow(new IOException("Exception")).when(pipe).close();
+        setupServerConnection();
+        sendMessage(CLOSE_MESSAGE);
 
         TestObserver<String> testObserver = observeServerMessages();
 
-        verifyStopAndComplete(testObserver);
+        verify(pipe).close();
+//        verifyStopAndComplete(testObserver);
     }
 
     private void verifyStopAndComplete(TestObserver<String> testObserver) throws IOException {
@@ -216,32 +198,18 @@ public class PipeChannelServerTest {
         assertThat(testObserver.values().get(0)).isEqualTo(msg);
     }
 
-    private void sendFirstMessage() {
-        Message m = setupMessage("Server, service me", "iClient");
+    private void sendConnectMessage() {
+        sendMessage(CONNECT_PLEASE);
+    }
+
+    private void sendMessage(String message) {
+        Message m = setupMessage(message, "iClient");
         pipeChannelServer.handleMessage(m);
     }
 
-    private void setupWebserverConnectionNever() {
-//        when(webSocketServer.write(anyString())).thenReturn(Observable.<webSocketServer>never());
-    }
-
-    private void setupWebserverConnectionError() {
-//        when(webSocketServer.write(anyString())).thenReturn(Observable.<webSocketServer>error(new Throwable("Arg")));
-    }
-
-    private void setupDisconnectError() {
-//        when(pipe.onDisconnected()).thenReturn(Completable.error(new Throwable("You shall not disconnect")));
-    }
-
-    private void setupDisconnect() {
-//        when(pipe.onDisconnected()).thenReturn(disconnectCompletable);
-    }
-
-    private void setupWebserverConnection() {
-//        when(pipe.receiveMessages()).thenReturn(messageStream);
-//        when(pipe.onDisconnected()).thenReturn(Completable.never());
+    private void setupServerConnection() {
+        when(pipe.subscribeToMessages()).thenReturn(messageStream);
         when(pipe.isConnected()).thenReturn(true);
-//        when(pipe.write(anyString())).thenReturn();
     }
 
     @NonNull
@@ -259,6 +227,8 @@ public class PipeChannelServerTest {
 
     class TestPipeChannelServer extends PipeChannelServer {
 
+        CompletableSubject completable = CompletableSubject.create();
+
         TestPipeChannelServer(String serviceComponentName, String clientPackageName) {
             super(serviceComponentName, clientPackageName);
         }
@@ -266,6 +236,14 @@ public class PipeChannelServerTest {
         @Override
         protected Pipe createPipe(ParcelFileDescriptor descriptor) {
             return pipe;
+        }
+
+        @Override
+        protected void sendPipe() {
+            setupPipe(mock(ParcelFileDescriptor.class));
+            sendClientSetup(mock(ParcelFileDescriptor.class));
+            // Ignore un-mockable Android ParcelFileDescriptor call
+            completable.onComplete();// Mockito spy doesn't work with internal function calls -.-
         }
     }
 }

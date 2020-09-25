@@ -42,6 +42,10 @@ public class Pipe implements Closeable, Runnable {
         this.callback = callback;
     }
 
+    public Subject<String> subscribeToMessages() {
+        return callback;
+    }
+
     public boolean isConnected() {
         return !closed;
     }

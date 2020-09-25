@@ -25,8 +25,6 @@ import com.aevi.android.rxmessenger.service.pipe.Pipe;
 import java.io.IOException;
 
 import io.reactivex.functions.Consumer;
-import io.reactivex.subjects.PublishSubject;
-import io.reactivex.subjects.Subject;
 
 import static com.aevi.android.rxmessenger.MessageConstants.KEY_DATA_PIPE;
 import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CLOSE_MESSAGE;
@@ -38,7 +36,6 @@ import static com.aevi.android.rxmessenger.service.WebSocketChannelServer.CONNEC
 public class PipeChannelServer extends BaseChannelServer {
 
     private Pipe pipe;
-    private Subject<String> callback;
     private MessengerChannelServer messenger;
     private String clientPackageName;
 
@@ -50,13 +47,7 @@ public class PipeChannelServer extends BaseChannelServer {
             @Override
             public void accept(String message) throws Exception {
                 if (CONNECT_PLEASE.equals(message)) {
-                    try {
-                        ParcelFileDescriptor[] pair = ParcelFileDescriptor.createSocketPair();
-                        setupPipe(pair[0]);
-                        sendClientSetup(pair[1]);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    sendPipe();
                     messenger.disposeClient();
                 }
             }
@@ -78,24 +69,35 @@ public class PipeChannelServer extends BaseChannelServer {
 
     @Override
     protected void notifyMessage(String message) {
-        super.notifyMessage(message);
+        if (!message.equals(CONNECT_PLEASE)) {
+            super.notifyMessage(message);
+        }
+    }
+
+    protected void sendPipe() {
+        try {
+            ParcelFileDescriptor[] pair = ParcelFileDescriptor.createSocketPair();
+            setupPipe(pair[0]);
+            sendClientSetup(pair[1]);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @SuppressLint("CheckResult")
     private void setupPipe(ParcelFileDescriptor descriptor) {
-        callback = PublishSubject.create();
-        callback.subscribe(new Consumer<String>() {
+        pipe = createPipe(descriptor);
+        pipe.subscribeToMessages().subscribe(new Consumer<String>() {
             @Override
             public void accept(String message) throws Exception {
                 notifyMessage(message);
             }
         });
-        pipe = createPipe(descriptor);
         pipe.run();
     }
 
     protected Pipe createPipe(ParcelFileDescriptor descriptor) {
-        return new Pipe(descriptor, callback);
+        return new Pipe(descriptor);
     }
 
     @Override
@@ -103,7 +105,7 @@ public class PipeChannelServer extends BaseChannelServer {
         return send(CLOSE_MESSAGE);
     }
 
-    private void sendClientSetup(ParcelFileDescriptor descriptor) {
+    protected void sendClientSetup(ParcelFileDescriptor descriptor) {
         Bundle b = new Bundle();
         b.putParcelable(KEY_DATA_PIPE, descriptor);
         messenger.send(b);
