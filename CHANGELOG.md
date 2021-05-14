@@ -1,29 +1,33 @@
-## Release Notes for the AEVI Android rx messenger API
+# Changelog
+All notable changes to this project will be documented in this file.
 
-## Version 5.0.3
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* Add ability for rx-messemger servers using websockets to create there own private key and certificate for SSL communication.
+## 5.0.2 - 2019-04-18
+- Ensure websocket messages are on correct thread
 
-## Version 5.0.2
+## 5.0.1 - 2019-04-05
+- Bug fixes
 
-* Ensure message callbacks happen on UI thread for websockets
+## 5.0.0 - 2019-02-06
+- Support for multiple messages over ObservableActivityHelper
+- Separated message streams from activity lifecycle management
 
-## Version 5.0.1
-
-* Fixed message posting bug and removed redundant log entries
-
-## Version 5.0.0
-
-* Refactored to separatedmessage streams from activity lifecycle management
-
-## Version 4.0.0
+## 4.0.0 - 2018-11-27
 
 * Refactored communication channel mechanism to allow different channels to be used for the underlying communication
 * New ChannelClient and ChannelServer interfaces should now be used instead of direct use of ObservableMessengerClient
 * Services should now extend `AbstractChannelService`
 * Added EXPERIMENTAL websocket communication channel can be started using `Channels.websocket()` method from `Channels` factory class
 
-## Version 3.0.0
+## 3.0.2 - 2018-10-04
+- Bug fix to prevent ObservableActivityHelper being removed for configuration changes
+
+## 3.0.1 - 2018-02-19
+- Added catch to unbindService() call to avoid exception if service is already unbound
+
+## 3.0.0 - 2018-02-05
 
 * Refactoring of rxmessenger to allow persistent connections and ensure the same client id for multiple messages
 * Introduced package structure
@@ -38,22 +42,22 @@
 * Throw exception when getInstance() is called and no instance is found for that id
 * Added sample app
 
-## Version 2.0.1
+## 2.0.1 - 2018-01-22
 
 * A class extending `AbstractMessengerService` continues running until the Observable signals onError or onCompleted or gets disposed by the downstream.
 
-## Version 2.0.0
+## 2.0.0 - 2017-10-20
 
 * Change from Json objects to be entirely String based to remove dependency and make messaging more generic.
 
-## Version 1.0.2
+## 1.0.2 - 2017-10-13
 
 * Deploy as jar files.
 
-## Version 1.0.1
+## 1.0.1 - 2017-09-12
 
 * Reduced the internal size of images sent using rxmessenger. 
 
-## Version 1.0.0
+## 1.0.0 - 2017-08-15
 
 * Initial first release.
