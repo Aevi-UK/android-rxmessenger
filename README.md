@@ -12,9 +12,24 @@ to choose whatever serialisation mechanism they want to serialise the data (we r
 
 ## Adding rxmessenger dependency
 
-The rxmessenger library is published to bintray in the jcenter repo.
+As of RxMessenger 5.0.3, artifacts are published to Github Packages instead of `jcenter`. This is due to JFrog [shutting down jcenter](https://jfrog.com/blog/into-the-sunset-bintray-jcenter-gocenter-and-chartcenter/).
 
-In your application build.gradle,
+Add the below entry to your `repositories` closure in the root `build.gradle` file. Note that unfortunately Github requires authentication for programmatic access of public packages (see [this thread](https://github.community/t/download-from-github-package-registry-without-authentication/14407/85) for details on this issue). This means that you must authenticate with a Github username and [generate a PAT (personal access token)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) in order to access the dependencies as per below. If you or your organisation don't already have a Github account, you can sign up for one [here](https://github.com/join).
+
+```
+maven {
+        name = "AEVI-UK"
+        url = uri("https://maven.pkg.github.com/aevi-uk/*")
+        credentials {
+            username = <your Github username>
+            password = <your Github personal access token with `read:packages` enabled>
+        }
+    }
+```
+
+Artifacts version 5.0.2 and earlier will still be available via `jcenter`.
+
+Then, in your application build.gradle,
 
 ```
 implementation "com.aevi.android:rxmessenger:<version>"
