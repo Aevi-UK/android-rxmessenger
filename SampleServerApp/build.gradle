@@ -1,39 +1,22 @@
 apply plugin: 'com.android.application'
 
-android {
-    compileSdkVersion 28
+ext.applicationId = "com.aevi.android.rxmessenger.sample.server"
+ext.applicationName = "SampleServerApp"
+ext.applicationTargetSdkVersion = 28
+ext.applicationMinSdkVersion = 21
 
-    defaultConfig {
-        applicationId "com.aevi.android.rxmessenger.sample.server"
-        minSdkVersion 21
-        targetSdkVersion 28
-        versionCode 1
-        versionName "1.1"
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    lintOptions {
-        abortOnError false
-    }
-}
+apply from: gradleScript('android/artifacts.gradle')
+apply from: gradleScript('android/versioning.gradle')
+apply from: gradleScript('android/basic-android.gradle')
+apply from: gradleScript('android/signing-utils.gradle')
+apply from: gradleScript('android/common-build-types.gradle')
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation project(":rxmessenger")
     implementation project(":samplecommonlib")
-    
+
     implementation presentationDependencies.butterKnife
     implementation domainDependencies.rxJava
     implementation domainDependencies.rxAndroid

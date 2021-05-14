@@ -1,15 +1,16 @@
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
+apply plugin: 'java-library'
 
-version = "${apiVersion}"
-group = 'com.aevi.android'
-ext.artifactId = 'rxmessenger'
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
-apply from: '../java-provided.gradle'
-apply from: '../publish-repo.gradle'
-apply from: '../jar-publisher.gradle'
+apply from: gradleScript('lib/versioning.gradle')
+apply from: gradleScript('android/publishing-utils.gradle')
+
+publishingUtils?.publication {
+    groupId 'com.aevi.android'
+    artifactId project.name
+    version libraryVersion
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -40,69 +41,4 @@ javadoc {
     classpath = files(sourceSets.main.compileClasspath, sourceSets.main.runtimeClasspath)
     title = "AEVI Android RxMessenger"
     options.memberLevel = JavadocMemberLevel.PUBLIC
-}
-
-sourceCompatibility = "1.7"
-targetCompatibility = "1.7"
-
-def siteUrl = 'https://github.com/Aevi-UK/android-rxmessenger'
-def gitUrl = 'https://github.com/Aevi-UK/android-rxmessenger.git'
-
-bintray {
-    publications = ['apiJar']
-    override = true
-
-    pkg {
-        dryRun = false
-        publish = true
-        repo = 'aevi-uk'
-        name = 'rxmessenger'
-        userOrg = 'aevi'
-        licenses = ['Apache-2.0']
-        labels = ['rxjava', 'reactivex', 'android']
-        websiteUrl = siteUrl
-        issueTrackerUrl = 'https://github.com/Aevi-UK/android-rxmessenger/issues'
-        vcsUrl = gitUrl
-        publicDownloadNumbers = true
-    }
-}
-
-if (project.hasProperty('bintrayUser') && project.hasProperty('bintrayKey')) {
-    bintray.user = project.bintrayUser
-    bintray.key = project.bintrayKey
-}
-
-install {
-    repositories.mavenInstaller {
-        pom {
-            project {
-                packaging 'aar'
-                name 'RxMessenger'
-                url siteUrl
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id 'brettwold'
-                        name 'Brett Cherrington'
-                        email 'brett@annalytics.co.uk'
-                    }
-                    developer {
-                        id 'andreas-borglin'
-                        name 'Andreas Borglin'
-                        email 'andreas@jakoon.co.uk'
-                    }
-                }
-                scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url siteUrl
-                }
-            }
-        }
-    }
 }
